@@ -22,6 +22,29 @@ LABEL="com.corp.minute-of-silence"
 mkdir -p "$INSTALL_DIR"
 chmod 755 "$INSTALL_DIR"
 
+# ── 1b. Встановлення swiftDialog (якщо відсутній) ────────────────────────────
+DIALOG_BIN="/usr/local/bin/dialog"
+if [[ ! -x "$DIALOG_BIN" ]]; then
+    echo "INFO: swiftDialog не знайдено. Завантаження офіційного пакета swiftDialog..."
+    DIALOG_PKG_URL=$(/usr/bin/curl -sSL --max-time 15 "https://api.github.com/repos/swiftDialog/swiftDialog/releases/latest" 2>/dev/null \
+        | /usr/bin/grep -Eo 'https://[^"]+\.pkg' | /usr/bin/head -n 1 || true)
+    if [[ -z "$DIALOG_PKG_URL" ]]; then
+        DIALOG_PKG_URL="https://github.com/swiftDialog/swiftDialog/releases/download/v3.1.1/dialog-3.1.1-5000.pkg"
+    fi
+    TMP_DIALOG_PKG="/tmp/swiftDialog-install.pkg"
+    if /usr/bin/curl -fL --retry 3 --retry-delay 2 --max-time 60 "$DIALOG_PKG_URL" -o "$TMP_DIALOG_PKG" 2>/dev/null; then
+        echo "INFO: Встановлення swiftDialog з $DIALOG_PKG_URL..."
+        /usr/sbin/installer -pkg "$TMP_DIALOG_PKG" -target / >/dev/null 2>&1 || true
+        rm -f "$TMP_DIALOG_PKG"
+        if [[ -x "$DIALOG_BIN" ]]; then
+            echo "INFO: swiftDialog успішно встановлено ($("$DIALOG_BIN" --version 2>/dev/null || echo 'OK'))."
+        fi
+    else
+        rm -f "$TMP_DIALOG_PKG" 2>/dev/null || true
+        echo "WARN: Не вдалося завантажити swiftDialog, використовуватиметься нативний osascript fallback."
+    fi
+fi
+
 AUDIO_DEST="$INSTALL_DIR/metronome.mp3"
 AUDIO_URL="https://raw.githubusercontent.com/girilovsky/National-Minute-Of-Silence/main/macos/metronome.mp3"
 if [[ ! -s "$AUDIO_DEST" || $(stat -f%z "$AUDIO_DEST" 2>/dev/null || echo 0) -lt 100000 ]]; then

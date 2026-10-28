@@ -106,7 +106,7 @@ $winDescription = "Нагадування про загальнонаціона�
 
 Write-Host "Checking Windows Device Management Scripts in Intune..." -ForegroundColor Yellow
 $winScriptsUri = "https://graph.microsoft.com/beta/deviceManagement/deviceManagementScripts"
-$existingWin = Invoke-IntuneGraphRequest -Method GET -Uri "$winScriptsUri`?`$filter=displayName eq '$winDisplayName'"
+$allWin = Invoke-IntuneGraphRequest -Method GET -Uri $winScriptsUri; $existingWin = @{ value = @($allWin.value | Where-Object { $_.displayName -eq $winDisplayName }) }
 
 $winScriptId = $null
 if ($existingWin.value -and $existingWin.value.Count -gt 0) {
@@ -163,7 +163,7 @@ $macDescription = "Нагадування про загальнонаціона�
 
 Write-Host "Checking macOS Device Shell Scripts in Intune..." -ForegroundColor Yellow
 $macScriptsUri = "https://graph.microsoft.com/beta/deviceManagement/deviceShellScripts"
-$existingMac = Invoke-IntuneGraphRequest -Method GET -Uri "$macScriptsUri`?`$filter=displayName eq '$macDisplayName'"
+$allMac = Invoke-IntuneGraphRequest -Method GET -Uri $macScriptsUri; $existingMac = @{ value = @($allMac.value | Where-Object { $_.displayName -eq $macDisplayName }) }
 
 $macScriptId = $null
 if ($existingMac.value -and $existingMac.value.Count -gt 0) {
