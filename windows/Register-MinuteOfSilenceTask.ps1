@@ -78,7 +78,7 @@ $trigger = New-ScheduledTaskTrigger -Daily -At "08:59:50"
 $settings = New-ScheduledTaskSettingsSet `
     -AllowStartIfOnBatteries `
     -DontStopIfGoingOnBatteries `
-    -ExecutionTimeLimit (New-TimeSpan -Minutes 5) `
+    -ExecutionTimeLimit (New-TimeSpan -Minutes 2) `
     -MultipleInstances IgnoreNew
 
 # Реєстрація завдання під поточним користувачем (інтерактивна сесія)

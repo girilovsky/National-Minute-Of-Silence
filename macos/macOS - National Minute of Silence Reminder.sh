@@ -41,11 +41,13 @@ else
 fi
 
 if [[ "$FORCE" == false ]]; then
+    # Дозволено від 08:59:00 (TARGET - 60s) строго до 09:00:59 (TARGET + 59s)
+    # О 09:01:00 і пізніше сповіщення НЕ відображається!
     MIN_ALLOWED=$((TARGET_EPOCH - 60))
-    MAX_ALLOWED=$((TARGET_EPOCH + 55))
+    MAX_ALLOWED=$((TARGET_EPOCH + 59))
 
     if (( NOW_EPOCH < MIN_ALLOWED || NOW_EPOCH > MAX_ALLOWED )); then
-        echo "Minute of Silence: Поточний час ($(date +"%H:%M:%S")) за межами 08:59:00-09:00:55. Пропуск."
+        echo "Minute of Silence: Поточний час ($(date +"%H:%M:%S")) за межами вікна. О 09:01 і пізніше сповіщення не відображається. Пропуск."
         exit 0
     fi
 fi
@@ -80,6 +82,10 @@ done
 # Міжпристроєва синхронізація (Pre-warming sleep до 09:00:00)
 if [[ "$FORCE" == false ]]; then
     CURRENT_EPOCH=$(date +%s)
+    if (( CURRENT_EPOCH >= TARGET_EPOCH + 60 )); then
+        echo "Minute of Silence: Час 09:01:00 або пізніше. Хвилина мовчання на сьогодні завершена. Пропуск."
+        exit 0
+    fi
     if (( CURRENT_EPOCH < TARGET_EPOCH )); then
         WAIT_SEC=$((TARGET_EPOCH - CURRENT_EPOCH))
         echo "Minute of Silence: Фоновий прогрів. Очікування ${WAIT_SEC}с до 09:00:00..."

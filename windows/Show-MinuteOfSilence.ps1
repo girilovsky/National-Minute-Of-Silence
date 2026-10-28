@@ -32,19 +32,19 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# ── 1. Time Guard: перевірка вікна запуску (08:59:40 - 09:00:55) ──────────────
+# ── 1. Time Guard: перевірка вікна запуску (08:59:40 - 09:00:59) ──────────────
 $now = Get-Date
 $todayTarget = Get-Date -Hour 9 -Minute 0 -Second 0 -Millisecond 0
 
 if (-not $Force) {
     # Дозволене вікно:
     # - Ранній запуск (Pre-warming): від 08:59:40 (за 20 сек до 09:00)
-    # - Запізнілий запуск/вихід зі сну (Catch-up): до 09:00:55
+    # - Жорсткий дедлайн: строго до 09:00:59 (о 09:01:00 і пізніше сповіщення НЕ відображається)
     $minAllowed = $todayTarget.AddSeconds(-20)
-    $maxAllowed = $todayTarget.AddSeconds(55)
+    $maxAllowed = $todayTarget.AddSeconds(59)
 
     if ($now -lt $minAllowed -or $now -gt $maxAllowed) {
-        Write-Verbose "Minute of Silence: Поточний час ($($now.ToString('HH:mm:ss'))) за межами 08:59:40 - 09:00:55. Пропуск."
+        Write-Verbose "Minute of Silence: Поточний час ($($now.ToString('HH:mm:ss'))) за межами 08:59:40 - 09:00:59. О 09:01 і пізніше сповіщення не відображається. Пропуск."
         exit 0
     }
 }
@@ -434,13 +434,20 @@ public static extern bool SetProcessDpiAwarenessContext(System.IntPtr ctx);
         $adjustedTarget = $todayTarget.AddMilliseconds(-$ntpSkew)
 
         $now = Get-Date
+        # Жорстка перевірка: якщо атомарний час вже 09:01:00 або пізніше — негайний вихід!
+        if ($now -ge $adjustedTarget.AddSeconds(60)) {
+            Write-Verbose "Minute of Silence: Атомарний час вже 09:01:00 або пізніше. Хвилина мовчання на сьогодні завершена. Пропуск."
+            exit 0
+        }
+
         if ($now -ge $adjustedTarget) {
-            # Етап Catch-up: ноутбук прокинувся після 09:00:00 (між 09:00:00 і 09:00:55)
+            # Етап Catch-up: ноутбук прокинувся після 09:00:00 (між 09:00:00 і 09:00:59)
             # Вирівнюємося на найближчий круглий такт секунди для ідеальної фази цокання
             $elapsedTotal = ($now - $adjustedTarget).TotalSeconds
             $targetBeat = [Math]::Ceiling($elapsedTotal)
-            $script:initialOffsetSeconds = [Math]::Min(59.0, $targetBeat)
-            if ($script:initialOffsetSeconds -ge $TestSeconds) {
+            $script:initialOffsetSeconds = $targetBeat
+            # Якщо хвилина мовчання вже закінчилась (60 с) або минуло 09:01:00 — пропуск
+            if ($script:initialOffsetSeconds -ge $TestSeconds -or $script:initialOffsetSeconds -ge 60) {
                 exit 0
             }
             $script:targetInstant = $adjustedTarget.AddSeconds($targetBeat)
