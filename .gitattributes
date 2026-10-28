@@ -1,0 +1,15 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Enforce LF line endings for UNIX / macOS scripts and configs
+*.sh text eol=lf
+*.plist text eol=lf
+reference-vellez/opt/vellez/timer/* text eol=lf
+reference-vellez/updater.sh text eol=lf
+
+# Enforce CRLF for Windows PowerShell scripts
+*.ps1 text eol=crlf
+
+# Binary files
+*.mp3 binary
+*.png binary
