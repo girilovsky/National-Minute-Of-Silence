@@ -18,9 +18,17 @@ SCRIPT_PATH="$INSTALL_DIR/show-minute-of-silence.sh"
 PLIST_PATH="/Library/LaunchAgents/com.corp.minute-of-silence.plist"
 LABEL="com.corp.minute-of-silence"
 
-# ── 1. Створення директорії встановлення ───────────────────────────────────────
+# ── 1. Створення директорії встановлення та кешування аудіо ──────────────────
 mkdir -p "$INSTALL_DIR"
 chmod 755 "$INSTALL_DIR"
+
+AUDIO_DEST="$INSTALL_DIR/metronome.mp3"
+AUDIO_URL="https://raw.githubusercontent.com/girilovsky/National-Minute-Of-Silence/main/windows/metronome.mp3"
+if [[ ! -s "$AUDIO_DEST" || $(stat -f%z "$AUDIO_DEST" 2>/dev/null || echo 0) -lt 100000 ]]; then
+    echo "INFO: Завантаження студійного аудіотреку з GitHub ($AUDIO_URL)..."
+    /usr/bin/curl -sSL --max-time 15 "$AUDIO_URL" -o "$AUDIO_DEST" 2>/dev/null || true
+    chmod 644 "$AUDIO_DEST" 2>/dev/null || true
+fi
 
 # ── 2. Розгортання виконуваного скрипта ────────────────────────────────────────
 cat > "$SCRIPT_PATH" << 'EOF'
@@ -78,6 +86,14 @@ for c in "${CANDIDATE_PATHS[@]}"; do
         break
     fi
 done
+
+if [[ -z "$AUDIO_PATH" ]]; then
+    DOWNLOAD_TARGET="/Library/Application Support/Corporate/MinuteOfSilence/metronome.mp3"
+    AUDIO_URL="https://raw.githubusercontent.com/girilovsky/National-Minute-Of-Silence/main/windows/metronome.mp3"
+    if /usr/bin/curl -sSL --max-time 10 "$AUDIO_URL" -o "$DOWNLOAD_TARGET" 2>/dev/null; then
+        AUDIO_PATH="$DOWNLOAD_TARGET"
+    fi
+fi
 
 # Міжпристроєва синхронізація (Pre-warming sleep до 09:00:00)
 if [[ "$FORCE" == false ]]; then

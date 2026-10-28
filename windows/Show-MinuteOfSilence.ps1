@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     Відображає вікно щоденного нагадування про загальнонаціональну хвилину мовчання о 09:00.
 
@@ -98,6 +98,18 @@ public static extern bool SetProcessDpiAwarenessContext(System.IntPtr ctx);
             $officialMp3Path = (Get-Item $cand).FullName
             break
         }
+    }
+
+    if (-not $officialMp3Path) {
+        $downloadTarget = Join-Path $installDir "metronome.mp3"
+        try {
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+            $webClient = New-Object System.Net.WebClient
+            $webClient.DownloadFile("https://raw.githubusercontent.com/girilovsky/National-Minute-Of-Silence/main/windows/metronome.mp3", $downloadTarget)
+            if (Test-Path $downloadTarget) {
+                $officialMp3Path = $downloadTarget
+            }
+        } catch {}
     }
 
     $script:defaultVolume = 0.25
