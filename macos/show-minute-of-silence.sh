@@ -95,7 +95,7 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-# ── 6. Відображення: swiftDialog (якщо є) або рідний AppleScript ───────────────
+# ── 6. Відображення: swiftDialog (якщо є) або рідний AppleScript без System Events ─
 DIALOG_BIN="/usr/local/bin/dialog"
 
 if [[ -x "$DIALOG_BIN" ]]; then
@@ -111,18 +111,13 @@ if [[ -x "$DIALOG_BIN" ]]; then
         --infobox "🕯 09:00" \
         || true
 else
-    echo "Minute of Silence: Відображення через osascript / System Events..."
-    /usr/bin/osascript <<EOF || true
-tell application "System Events"
-    activate
-    display alert "$TITLE" ¬
-        message "$MESSAGE" ¬
-        as informational ¬
-        buttons {"Зрозуміло"} ¬
-        default button "Зрозуміло" ¬
-        giving up after 60
-end tell
-EOF
+    echo "Minute of Silence: Відображення через нативний osascript (Cocoa + StandardAdditions без TCC)..."
+    /usr/bin/osascript -e 'use framework "Cocoa"' \
+        -e 'use scripting additions' \
+        -e 'current application'\''s NSApplication'\''s sharedApplication()'\''s setActivationPolicy:(current application'\''s NSApplicationActivationPolicyAccessory)' \
+        -e 'current application'\''s NSApplication'\''s sharedApplication()'\''s activateIgnoringOtherApps:true' \
+        -e "display alert \"$TITLE\" message \"$MESSAGE\" as informational buttons {\"Зрозуміло\"} default button \"Зрозуміло\" giving up after 60" \
+        || true
 fi
 
 echo "Minute of Silence: Сповіщення завершено."

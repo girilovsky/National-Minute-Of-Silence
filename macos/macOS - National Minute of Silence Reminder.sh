@@ -133,17 +133,12 @@ if [[ -x "$DIALOG_BIN" ]]; then
         --infobox "🕯 09:00" \
         || true
 else
-    /usr/bin/osascript <<EOS || true
-tell application "System Events"
-    activate
-    display alert "$TITLE" ¬
-        message "$MESSAGE" ¬
-        as informational ¬
-        buttons {"Зрозуміло"} ¬
-        default button "Зрозуміло" ¬
-        giving up after 60
-end tell
-EOS
+    /usr/bin/osascript -e 'use framework "Cocoa"' \
+        -e 'use scripting additions' \
+        -e 'current application'\''s NSApplication'\''s sharedApplication()'\''s setActivationPolicy:(current application'\''s NSApplicationActivationPolicyAccessory)' \
+        -e 'current application'\''s NSApplication'\''s sharedApplication()'\''s activateIgnoringOtherApps:true' \
+        -e "display alert \"$TITLE\" message \"$MESSAGE\" as informational buttons {\"Зрозуміло\"} default button \"Зрозуміло\" giving up after 60" \
+        || true
 fi
 
 exit 0
