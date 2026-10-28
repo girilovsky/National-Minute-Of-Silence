@@ -11,10 +11,8 @@
     5. Assigns scripts to the target group.
 #>
 
-[CmdletBinding()]
 param(
-    [string]$TargetGroupName = "IT Core",
-    [string]$ExclusionGroupName = "[Dist] Minute of Silence - Exclusions"
+    [string]$TargetGroupName = "IT Core"
 )
 
 $ErrorActionPreference = 'Stop'
@@ -93,13 +91,6 @@ if (-not $primaryGroup) { $primaryGroup = $matchedTarget[0] }
 
 Write-Host "`nSelected Primary Target Group: '$($primaryGroup.displayName)' ($($primaryGroup.id))`n" -ForegroundColor Green
 
-# Check exclusion group if exists
-$exclusionGroup = $allGroups | Where-Object { $_.displayName -eq $ExclusionGroupName }
-if ($exclusionGroup) {
-    Write-Host "Found Exclusion Group: '$($exclusionGroup.displayName)' ($($exclusionGroup.id))`n" -ForegroundColor Yellow
-} else {
-    Write-Host "Exclusion Group '$ExclusionGroupName' not found (will skip exclusion assignment).`n" -ForegroundColor Gray
-}
 
 # 3. Deploy Windows Script
 $winScriptPath = Join-Path $PSScriptRoot "windows\Windows - National Minute of Silence Reminder.ps1"
