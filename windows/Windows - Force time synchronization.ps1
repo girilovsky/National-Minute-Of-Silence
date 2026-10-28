@@ -1,11 +1,10 @@
 ﻿<#
 .SYNOPSIS
     [Intune Script] Windows - Force time synchronization
-    Примусово налаштовує та синхронізує системний час Windows через службу W32Time та NTP.
+    Примусово налаштовує постійну та регулярну синхронізацію системного часу Windows через W32Time, NTP та Task Scheduler.
 
 .DESCRIPTION
-    Цей скрипт призначений для розгортання через Microsoft Intune (Devices > Scripts > Windows)
-    або як Proactive Remediation Detection/Remediation:
+    Цей скрипт призначений для розгортання через Microsoft Intune (Devices > Scripts > Windows):
     - Налаштування Intune:
         * Run this script using the logged on credentials: No (RunAsAccount: system / Administrator)
         * Enforce script signature check: No
@@ -15,7 +14,13 @@
         2. Налаштовує надійні сервери часу (pool.ntp.org, time.windows.com, time.google.com).
         3. Зменшує інтервал опитування (SpecialPollInterval) до 1 години (3600 сек) замість стандартних 7 днів.
         4. Дозволяє миттєву корекцію часу будь-якої величини (MaxPhaseCorrection = 0xFFFFFFFF).
-        5. Примусово виконує негайну синхронізацію w32tm /resync /force.
+        5. Реєструє постійне системне завдання Task Scheduler "Corporate Time Synchronization" (SYSTEM context):
+           - Щодня о 08:30 (за 30 хв до хвилини мовчання)
+           - Повторення кожні 4 години цілодобово
+           - При завантаженні системи (AtStartup)
+           - При вході користувача (AtLogon)
+           - З параметром StartWhenAvailable=$true (автоматично наздоганяє при пробудженні зі сну)
+        6. Примусово виконує негайну синхронізацію w32tm /resync /force.
 
 .NOTES
     Відповідає корпоративному стандарту назв Intune: "Windows - Force time synchronization".
@@ -54,10 +59,10 @@ try {
     Set-ItemProperty -Path $w32TimeParams -Name "NtpServer" -Value $ntpServers -Type String -Force
     Set-ItemProperty -Path $w32TimeParams -Name "Type" -Value "NTP" -Type String -Force
 
-    # Інтервал опитування: 3600 секунд (1 година)
+    # Інтервал опитування служби: 3600 секунд (1 година замість стандартних 7 днів)
     Set-ItemProperty -Path $w32TimeNtp -Name "SpecialPollInterval" -Value 3600 -Type DWord -Force
 
-    # Необмежена корекція фази (дозволяє виправляти навіть великі зсуви годинника)
+    # Необмежена корекція фази (дозволяє миттєво виправляти будь-які дрифти годинника)
     Set-ItemProperty -Path $w32TimeConfig -Name "MaxNegPhaseCorrection" -Value 0xFFFFFFFF -Type DWord -Force
     Set-ItemProperty -Path $w32TimeConfig -Name "MaxPosPhaseCorrection" -Value 0xFFFFFFFF -Type DWord -Force
 
@@ -66,13 +71,57 @@ try {
     $configResult = & w32tm /config /manualpeerlist:"$ntpServers" /syncfromflags:manual /reliable:yes /update 2>&1
     Write-Host "w32tm config: $configResult" -ForegroundColor Gray
 
-    # ── 4. Примусова синхронізація часу ───────────────────────────────────────
-    Write-Host "4. Примусова синхронізація часу (w32tm /resync /force)..." -ForegroundColor Cyan
+    # ── 4. Реєстрація регулярного системного завдання (Task Scheduler) ────────
+    $taskName = "Corporate Time Synchronization"
+    Write-Host "4. Налаштування регулярного системного завдання '$taskName'..." -ForegroundColor Cyan
+
+    $taskAction = New-ScheduledTaskAction `
+        -Execute "powershell.exe" `
+        -Argument "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command `"Start-Service W32Time -ErrorAction SilentlyContinue; & w32tm /resync /nowait`""
+
+    # Тригер 1: Щодня о 08:30 з регулярним повторенням кожні 4 години
+    $triggerDaily = New-ScheduledTaskTrigger `
+        -Once -At "08:30" `
+        -RepetitionInterval (New-TimeSpan -Hours 4) `
+        -RepetitionDuration (New-TimeSpan -Days 3650)
+
+    # Тригер 2: При завантаженні системи (AtStartup)
+    $triggerStartup = New-ScheduledTaskTrigger -AtStartup
+
+    # Тригер 3: При вході користувача в систему (AtLogOn)
+    $triggerLogon = New-ScheduledTaskTrigger -AtLogOn
+
+    $taskSettings = New-ScheduledTaskSettingsSet `
+        -AllowStartIfOnBatteries `
+        -DontStopIfGoingOnBatteries `
+        -StartWhenAvailable `
+        -ExecutionTimeLimit (New-TimeSpan -Minutes 5) `
+        -MultipleInstances IgnoreNew
+
+    $existing = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+    if ($existing) {
+        Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
+    }
+
+    [void](Register-ScheduledTask `
+        -TaskName $taskName `
+        -Action $taskAction `
+        -Trigger @($triggerDaily, $triggerStartup, $triggerLogon) `
+        -Settings $taskSettings `
+        -User "NT AUTHORITY\SYSTEM" `
+        -RunLevel Highest `
+        -Description "Регулярна корпоративна синхронізація часу Windows через NTP кожні 4 години, щодня о 08:30 та при пробудженні" `
+        -Force)
+
+    Write-Host "Системне завдання '$taskName' зареєстровано (кожні 4 години, о 08:30 та при виході зі сну)." -ForegroundColor Green
+
+    # ── 5. Примусова негайна синхронізація часу ───────────────────────────────
+    Write-Host "5. Примусова синхронізація часу (w32tm /resync /force)..." -ForegroundColor Cyan
     $resyncResult = & w32tm /resync /force /nowait 2>&1
     Write-Host "Результат команди: $resyncResult" -ForegroundColor Green
 
-    # ── 5. Перевірка статусу синхронізації ────────────────────────────────────
-    Write-Host "5. Поточний статус синхронізації:" -ForegroundColor Gray
+    # ── 6. Перевірка статусу синхронізації ────────────────────────────────────
+    Write-Host "6. Поточний статус синхронізації:" -ForegroundColor Gray
     try {
         $status = & w32tm /query /status 2>&1
         $status | ForEach-Object { Write-Host "   $_" -ForegroundColor DarkGray }
@@ -80,7 +129,7 @@ try {
         Write-Warning "Не вдалося отримати детальний статус w32tm."
     }
 
-    Write-Host "УСПІШНО: Синхронізацію часу Windows налаштовано та активовано." -ForegroundColor Green
+    Write-Host "УСПІШНО: Регулярну синхронізацію часу Windows налаштовано та активовано." -ForegroundColor Green
     exit 0
 
 } catch {
