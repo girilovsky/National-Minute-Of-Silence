@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Deploys the National Minute of Silence reminder scripts to Microsoft Intune
     for Windows and macOS, targeting the IT Core group.

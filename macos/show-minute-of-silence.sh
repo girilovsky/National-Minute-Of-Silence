@@ -49,11 +49,8 @@ MESSAGE="Зупинимося на хвилину, щоб вшанувати п�
 AUDIO_PATH=""
 CANDIDATE_PATHS=(
     "$(dirname "$0")/metronome.mp3"
-    "$(dirname "$0")/zvuk-blokadnogo-metronoma.mp3"
-    "$(dirname "$0")/99_silent_m.mp3"
     "/Library/Application Support/Corporate/MinuteOfSilence/metronome.mp3"
-    "/Library/Application Support/Corporate/MinuteOfSilence/zvuk-blokadnogo-metronoma.mp3"
-    "/Library/Application Support/Corporate/MinuteOfSilence/99_silent_m.mp3"
+    "$(dirname "$0")/../assets/metronome.mp3"
 )
 for c in "${CANDIDATE_PATHS[@]}"; do
     if [[ -f "$c" ]]; then
@@ -64,7 +61,7 @@ done
 
 if [[ -z "$AUDIO_PATH" ]]; then
     DOWNLOAD_TARGET="/Library/Application Support/Corporate/MinuteOfSilence/metronome.mp3"
-    AUDIO_URL="https://raw.githubusercontent.com/girilovsky/National-Minute-Of-Silence/main/windows/metronome.mp3"
+    AUDIO_URL="https://raw.githubusercontent.com/girilovsky/National-Minute-Of-Silence/main/macos/metronome.mp3"
     if /usr/bin/curl -sSL --max-time 10 "$AUDIO_URL" -o "$DOWNLOAD_TARGET" 2>/dev/null; then
         AUDIO_PATH="$DOWNLOAD_TARGET"
     fi

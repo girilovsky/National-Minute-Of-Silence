@@ -1,12 +1,12 @@
-<#
+﻿<#
 .SYNOPSIS
     Відображає вікно щоденного нагадування про загальнонаціональну хвилину мовчання о 09:00.
 
 .DESCRIPTION
     Графічне меморіальне сповіщення (WPF/XAML) у сучасному стилі:
     - Відображається поверх інших вікон (TopMost).
-    - Автоматично закривається після закінчення хвилини мовчання (~67 сек або за замовчуванням 60 сек).
-    - Відтворює оригінальний офіційний аудіотрек хвилини мовчання (99_silent_m.mp3 з метрономом).
+    - Автоматично закривається після закінчення хвилини мовчання (60 сек).
+    - Відтворює калібрований аудіотрек метронома пам'яті (60.0 BPM).
     - У разі відсутності файлу MP3 автоматично вмикає вбудований синтезований метроном пам'яті.
     - Можливість вимкнути звук кнопкою 🔊/🔇 або параметром -NoSound.
     - Сучасний вигляд (Bento/Dark Glass), мінімалістичний flame-accent, чиста типографіка Inter / Segoe UI.
@@ -18,7 +18,7 @@
     Ігнорує перевірку часу 09:00 (використовується для тестування).
 
 .PARAMETER TestSeconds
-    Встановлює тривалість показу в секундах (за замовчуванням: 67 — повна тривалість офіційного аудіотреку).
+    Встановлює тривалість показу в секундах (за замовчуванням: 60 с).
 
 .PARAMETER NoSound
     Запускає сповіщення в беззвучному режимі.
@@ -77,19 +77,13 @@ public static extern bool SetProcessDpiAwarenessContext(System.IntPtr ctx);
     $script:mediaPlayer  = $null
     $script:soundPlayer  = $null
 
-    # Пошук файлу метронома або офіційного треку
+    # Пошук файлу метронома
     $installDir = Join-Path $env:LOCALAPPDATA "Corporate\MinuteOfSilence"
     $candidateMp3Paths = @(
         (Join-Path $PSScriptRoot "metronome.mp3"),
-        (Join-Path $PSScriptRoot "zvuk-blokadnogo-metronoma.mp3"),
         (Join-Path $installDir "metronome.mp3"),
-        (Join-Path $installDir "zvuk-blokadnogo-metronoma.mp3"),
-        "C:\Users\ViktorHyrylovskyi\Downloads\zvuk-blokadnogo-metronoma.mp3",
-        (Join-Path $PSScriptRoot "99_silent_m.mp3"),
-        (Join-Path $installDir "99_silent_m.mp3"),
-        (Join-Path $PSScriptRoot "..\assets\99_silent_m.mp3"),
         "C:\ProgramData\Corporate\MinuteOfSilence\metronome.mp3",
-        "C:\ProgramData\Corporate\MinuteOfSilence\99_silent_m.mp3"
+        (Join-Path $PSScriptRoot "..\assets\metronome.mp3")
     )
 
     $officialMp3Path = $null

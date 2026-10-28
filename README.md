@@ -2,6 +2,10 @@
 
 > Реалізація для Jira-задачі [II-5426](https://green-house-corp.atlassian.net/browse/II-5426) / [ITSD-94958](https://green-house-corp.atlassian.net/browse/ITSD-94958).
 
+<p align="center">
+  <img src="assets/preview.png" alt="Minute of Silence Preview" width="560" style="border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.4);" />
+</p>
+
 ## 1. Огляд та бізнес-вимоги
 
 Забезпечити щоденне автоматичне нагадування співробітникам про загальнонаціональну хвилину мовчання о **09:00** за місцевим часом для вшанування пам'яті загиблих захисників, захисниць та всіх жертв війни.
@@ -34,20 +38,21 @@
 
 ```
 Projects/National-Minute-Of-Silence/
+├── assets/
+│   └── preview.png                                # Знімок графічного інтерфейсу
 ├── windows/
 │   ├── Show-MinuteOfSilence.ps1                   # WPF-інтерфейс сповіщення з таймером, NTP та аудіо
 │   ├── Register-MinuteOfSilenceTask.ps1           # Реєстрація щоденного завдання Windows Task Scheduler (08:59:50)
 │   ├── Windows - National Minute of Silence Reminder.ps1  # All-in-one скрипт для Microsoft Intune (User context)
 │   ├── Windows - Force time synchronization.ps1   # Intune-скрипт примусової синхронізації часу через W32Time / NTP (System context)
-│   ├── metronome.mp3                              # Чистий калібрований метроном хвилини мовчання (60.0 BPM, 60 с)
-│   └── 99_silent_m.mp3                            # Офіційний трек Веллез (метроном + оголошення)
+│   └── metronome.mp3                              # Чистий калібрований метроном хвилини мовчання (60.0 BPM, 60 с)
 ├── macos/
 │   ├── show-minute-of-silence.sh                  # macOS-скрипт (swiftDialog + osascript fallback + afplay)
 │   ├── com.corp.minute-of-silence.plist           # LaunchAgent для запуску о 08:59 (фоновий прогрів)
 │   ├── macOS - National Minute of Silence Reminder.sh     # All-in-one скрипт для Microsoft Intune (Root context)
 │   ├── macOS - Force time synchronization.sh      # Intune-скрипт примусової синхронізації часу macOS (Root context)
-│   ├── metronome.mp3                              # Чистий калібрований метроном хвилини мовчання (60.0 BPM, 60 с)
-│   └── 99_silent_m.mp3                            # Офіційний трек Веллез
+│   └── metronome.mp3                              # Чистий калібрований метроном хвилини мовчання (60.0 BPM, 60 с)
+├── deploy-intune.ps1                              # Автоматизоване розгортання в Intune через Microsoft Graph API
 └── README.md
 ```
 
