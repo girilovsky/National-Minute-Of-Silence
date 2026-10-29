@@ -147,7 +147,6 @@ export MOS_DURATION="60"
 
 if ! /usr/bin/osascript -l JavaScript << 'JXA_EOF'
 ObjC.import('Cocoa');
-ObjC.import('WebKit');
 
 var env = $.NSProcessInfo.processInfo.environment;
 var audioPath = ObjC.unwrap(env.objectForKey($('MOS_AUDIO_PATH'))) || '';
@@ -163,7 +162,7 @@ var x = screenFrame.origin.x + (screenFrame.size.width - width) / 2;
 var y = screenFrame.origin.y + (screenFrame.size.height - height) / 2;
 var rect = $.NSMakeRect(x, y, width, height);
 
-var styleMask = (1 << 0) | (1 << 15);
+var styleMask = (1 << 0) | (1 << 1) | (1 << 15);
 var win = $.NSWindow.alloc.initWithContentRectStyleMaskBackingDefer(
     rect,
     styleMask,
@@ -173,95 +172,77 @@ var win = $.NSWindow.alloc.initWithContentRectStyleMaskBackingDefer(
 win.setTitle($('Хвилина мовчання'));
 win.setTitlebarAppearsTransparent(true);
 win.setTitleVisibility(1);
-win.setOpaque(false);
+win.setOpaque(true);
 win.setBackgroundColor($.NSColor.colorWithCalibratedRedGreenBlueAlpha(0.067, 0.071, 0.082, 1.0));
 win.setHasShadow(true);
 win.setLevel(3);
 win.setCollectionBehavior((1 << 0) | (1 << 8));
-win.setMovableByWindowBackground(true);
+win.setReleasedWhenClosed(false);
 
-for (var i = 0; i <= 2; i++) {
-    var btn = win.standardWindowButton(i);
-    if (btn && !btn.isNil()) btn.setHidden(true);
+for (var i = 1; i <= 2; i++) {
+    var sbtn = win.standardWindowButton(i);
+    if (sbtn && !sbtn.isNil()) sbtn.setHidden(true);
 }
 
-var html = [
-'<!DOCTYPE html><html><head><meta charset="utf-8"><style>',
-'* { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }',
-'html, body { width: 100%; height: 100%; overflow: hidden; background: #111215; font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif; color: #FFFFFF; }',
-'.card { width: 100%; height: 100%; border: 1.2px solid #25272F; border-radius: 12px; padding: 24px 28px 20px 28px; display: flex; flex-direction: column; justify-content: space-between; background: #111215; }',
-'.top-bar { display: flex; justify-content: center; margin-bottom: 12px; }',
-'.pill-badge { background: #1A1C22; border: 1px solid #2D3039; border-radius: 14px; padding: 6px 14px; display: inline-flex; align-items: center; gap: 8px; }',
-'.pill-time { color: #F3F4F6; font-size: 13px; font-weight: 700; }',
-'.pill-label { color: #9CA3AF; font-size: 11.5px; font-weight: 600; letter-spacing: 0.3px; }',
-'.title { color: #FFFFFF; font-size: 19px; font-weight: 700; text-align: center; margin-bottom: 10px; }',
-'.body-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 10px; margin-bottom: 12px; flex: 1; }',
-'.desc { color: #9CA3AF; font-size: 13.5px; line-height: 20px; text-align: center; margin-bottom: 14px; }',
-'.motto-box { background: #16181E; border-radius: 10px; padding: 7px 14px; color: #FBBF24; font-size: 13.5px; font-weight: 600; text-align: center; white-space: pre; }',
-'.progress-track { width: 100%; height: 3px; background: #1E2026; border-radius: 1.5px; overflow: hidden; margin-bottom: 16px; }',
-'.progress-bar { height: 100%; width: 100%; background: #F59E0B; border-radius: 1.5px; transition: width 0.04s linear; }',
-'.footer { display: flex; align-items: center; justify-content: space-between; }',
-'.footer-left { display: flex; align-items: center; gap: 6px; }',
-'.icon-btn { width: 28px; height: 28px; border-radius: 6px; border: none; background: transparent; color: #9CA3AF; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; }',
-'.icon-btn:hover { background: #22252D; color: #FFFFFF; }',
-'.countdown { color: #6B7280; font-size: 12.5px; }',
-'.dismiss-btn { background: #22252D; color: #F3F4F6; border: 1px solid #333742; border-radius: 10px; padding: 8px 18px; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; }',
-'.dismiss-btn:hover { background: #2F333E; border-color: #4B5263; }',
-'</style></head><body>',
-'<div class="card">',
-'  <div class="top-bar">',
-'    <div class="pill-badge">',
-'      <svg width="13" height="13" viewBox="0 0 13 13"><path fill="#F59E0B" d="M6.5,1 C6.5,1 3,5.5 3,8.5 C3,10.4 4.6,12 6.5,12 C8.4,12 10,10.4 10,8.5 C10,5.5 6.5,1 6.5,1 Z"/></svg>',
-'      <span class="pill-time">09:00</span>',
-'      <span class="pill-label">• &nbsp;ХВИЛИНА МОВЧАННЯ</span>',
-'    </div>',
-'  </div>',
-'  <div class="title">Загальнонаціональна хвилина мовчання</div>',
-'  <div class="body-wrap">',
-'    <div class="desc">Зупинимося на хвилину, щоб вшанувати пам\x27ять захисників, захисниць та всіх українців, чиї життя забрала війна.</div>',
-'    <div class="motto-box">Пам\x27ятаємо.  Дякуємо.  Шануємо.</div>',
-'  </div>',
-'  <div class="progress-track"><div id="bar" class="progress-bar"></div></div>',
-'  <div class="footer">',
-'    <div class="footer-left">',
-'      <button id="muteBtn" class="icon-btn" title="Вимкнути / увімкнути звук">🔊</button>',
-'      <span id="cd" class="countdown">Закриється через ' + totalSeconds + ' с</span>',
-'    </div>',
-'    <button id="dismissBtn" class="dismiss-btn">Зрозуміло</button>',
-'  </div>',
-'</div>',
-'<script>',
-'var total = ' + totalSeconds + ';',
-'var start = performance.now();',
-'var muted = false;',
-'var bar = document.getElementById("bar");',
-'var cd = document.getElementById("cd");',
-'var muteBtn = document.getElementById("muteBtn");',
-'var dismissBtn = document.getElementById("dismissBtn");',
-'muteBtn.addEventListener("click", function() {',
-'  muted = !muted;',
-'  muteBtn.textContent = muted ? "🔇" : "🔊";',
-'  document.title = muted ? "MUTE" : "UNMUTE";',
-'});',
-'dismissBtn.addEventListener("click", function() { document.title = "CLOSE"; });',
-'window.addEventListener("keydown", function(e) {',
-'  if (e.key === "Escape" || e.key === "Enter" || e.key === " ") { document.title = "CLOSE"; }',
-'});',
-'setInterval(function() {',
-'  var elapsed = (performance.now() - start) / 1000;',
-'  var rem = Math.max(0, total - elapsed);',
-'  bar.style.width = ((rem / total) * 100) + "%";',
-'  cd.textContent = "Закриється через " + Math.ceil(rem) + " с";',
-'  if (rem <= 0) { document.title = "CLOSE"; }',
-'}, 40);',
-'</script></body></html>'
-].join('\n');
+var root = win.contentView;
+root.setWantsLayer(true);
 
-var config = $.WKWebViewConfiguration.alloc.init;
-var webView = $.WKWebView.alloc.initWithFrameConfiguration($.NSMakeRect(0, 0, width, height), config);
-webView.setValueForKey($.NSNumber.numberWithBool(false), $('drawsBackground'));
-win.setContentView(webView);
-webView.loadHTMLStringBaseURL($(html), $.NSURL.URLWithString($('https://local.corp')));
+function makeColor(r, g, b, a) {
+    return $.NSColor.colorWithCalibratedRedGreenBlueAlpha(r / 255.0, g / 255.0, b / 255.0, a);
+}
+
+function addBox(bx, by, bw, bh, fillC, borderC, borderW, radius) {
+    var box = $.NSBox.alloc.initWithFrame($.NSMakeRect(bx, by, bw, bh));
+    box.setBoxType(4);
+    box.setBorderType(1);
+    box.setTitlePosition(0);
+    box.setContentViewMargins($.NSMakeSize(0, 0));
+    box.setCornerRadius(radius);
+    box.setBorderWidth(borderW);
+    if (borderC) box.setBorderColor(borderC);
+    if (fillC) box.setFillColor(fillC);
+    root.addSubview(box);
+    return box;
+}
+
+function addLabel(lx, ly, lw, lh, text, fontSize, isBold, color, align) {
+    var tf = $.NSTextField.alloc.initWithFrame($.NSMakeRect(lx, ly, lw, lh));
+    tf.setStringValue($(text));
+    tf.setEditable(false);
+    tf.setSelectable(false);
+    tf.setBezeled(false);
+    tf.setDrawsBackground(false);
+    tf.setTextColor(color);
+    tf.setFont(isBold ? $.NSFont.boldSystemFontOfSize(fontSize) : $.NSFont.systemFontOfSize(fontSize));
+    tf.setAlignment(align);
+    root.addSubview(tf);
+    return tf;
+}
+
+addBox(135, 282, 230, 30, makeColor(26, 28, 34, 1.0), makeColor(45, 48, 57, 1.0), 1.0, 14.0);
+addLabel(135, 287, 230, 20, '🕯️ 09:00  •  ХВИЛИНА МОВЧАННЯ', 12.0, true, makeColor(243, 244, 246, 1.0), $.NSTextAlignmentCenter);
+
+addLabel(20, 238, 460, 28, 'Загальнонаціональна хвилина мовчання', 19.0, true, makeColor(255, 255, 255, 1.0), $.NSTextAlignmentCenter);
+
+addLabel(
+    36, 172, 428, 48,
+    "Зупинимося на хвилину, щоб вшанувати пам'ять захисників,\nзахисниць та всіх українців, чиї життя забрала війна.",
+    13.5, false, makeColor(156, 163, 175, 1.0), $.NSTextAlignmentCenter
+);
+
+addBox(105, 118, 290, 36, makeColor(22, 24, 30, 1.0), makeColor(37, 39, 47, 1.0), 1.0, 10.0);
+addLabel(105, 125, 290, 22, "Пам'ятаємо.   Дякуємо.   Шануємо.", 13.5, true, makeColor(251, 191, 36, 1.0), $.NSTextAlignmentCenter);
+
+var barMaxW = 444.0;
+addBox(28, 82, barMaxW, 4, makeColor(30, 32, 38, 1.0), makeColor(30, 32, 38, 1.0), 0.0, 2.0);
+var barFill = addBox(28, 82, barMaxW, 4, makeColor(245, 158, 11, 1.0), makeColor(245, 158, 11, 1.0), 0.0, 2.0);
+
+addBox(28, 24, 34, 34, makeColor(26, 28, 34, 1.0), makeColor(45, 48, 57, 1.0), 1.0, 8.0);
+var muteLabel = addLabel(28, 30, 34, 22, '🔊', 14.0, false, makeColor(243, 244, 246, 1.0), $.NSTextAlignmentCenter);
+var cdLabel = addLabel(72, 30, 220, 20, 'Закриється через ' + totalSeconds + ' с', 12.5, false, makeColor(107, 114, 128, 1.0), $.NSTextAlignmentLeft);
+
+addBox(352, 24, 120, 36, makeColor(34, 37, 45, 1.0), makeColor(51, 55, 66, 1.0), 1.0, 10.0);
+addLabel(352, 31, 120, 22, 'Зрозуміло', 13.0, true, makeColor(243, 244, 246, 1.0), $.NSTextAlignmentCenter);
 
 var sound = null;
 if (audioPath.length > 0) {
@@ -272,45 +253,101 @@ if (audioPath.length > 0) {
     }
 }
 
-win.makeKeyAndOrderFront(null);
-app.activateIgnoringOtherApps(true);
-
 var startTime = Date.now();
 var isMuted = false;
-var lastAction = '';
 
-while (true) {
-    $.NSRunLoop.currentRunLoop.runUntilDate($.NSDate.dateWithTimeIntervalSinceNow(0.04));
-    if (!win.isVisible) break;
-    var elapsedSec = (Date.now() - startTime) / 1000.0;
-    var remSec = totalSeconds - elapsedSec;
-    var titleCmd = ObjC.unwrap(webView.title) || '';
+ObjC.registerSubclass({
+    name: 'MOSWindowController',
+    superclass: 'NSObject',
+    methods: {
+        'onDismiss:': {
+            types: ['void', ['id']],
+            implementation: function(sender) {
+                if (sound && !sound.isNil()) sound.stop;
+                app.terminate(null);
+            }
+        },
+        'onMute:': {
+            types: ['void', ['id']],
+            implementation: function(sender) {
+                isMuted = !isMuted;
+                muteLabel.setStringValue($(isMuted ? '🔇' : '🔊'));
+                if (sound && !sound.isNil()) {
+                    sound.setVolume(isMuted ? 0.0 : defaultVolume);
+                }
+            }
+        },
+        'onTick:': {
+            types: ['void', ['id']],
+            implementation: function(timer) {
+                if (!win.isVisible) {
+                    if (sound && !sound.isNil()) sound.stop;
+                    app.terminate(null);
+                    return;
+                }
+                var elapsedSec = (Date.now() - startTime) / 1000.0;
+                var remSec = Math.max(0.0, totalSeconds - elapsedSec);
+                if (remSec <= 0.0) {
+                    if (sound && !sound.isNil()) sound.stop;
+                    app.terminate(null);
+                    return;
+                }
+                var curW = Math.max(1.0, barMaxW * (remSec / totalSeconds));
+                barFill.setFrameSize($.NSMakeSize(curW, 4));
+                cdLabel.setStringValue($('Закриється через ' + Math.ceil(remSec) + ' с'));
 
-    if (titleCmd === 'CLOSE' || remSec <= 0) {
-        break;
-    }
-    if (titleCmd !== lastAction) {
-        if (titleCmd === 'MUTE') {
-            isMuted = true;
-            if (sound && !sound.isNil()) sound.setVolume(0.0);
-        } else if (titleCmd === 'UNMUTE') {
-            isMuted = false;
-            if (sound && !sound.isNil()) sound.setVolume(defaultVolume);
+                if (!isMuted && sound && !sound.isNil() && remSec <= 2.4) {
+                    sound.setVolume(defaultVolume * Math.max(0.0, remSec / 2.4));
+                }
+                if (remSec <= 0.2) {
+                    win.setAlphaValue(Math.max(0.0, remSec / 0.2));
+                }
+            }
+        },
+        'windowWillClose:': {
+            types: ['void', ['id']],
+            implementation: function(notif) {
+                if (sound && !sound.isNil()) sound.stop;
+                app.terminate(null);
+            }
         }
-        lastAction = titleCmd;
     }
-    if (!isMuted && sound && !sound.isNil() && remSec <= 2.4 && remSec > 0) {
-        sound.setVolume(defaultVolume * Math.max(0.0, remSec / 2.4));
-    }
-    if (remSec <= 0.2 && remSec > 0) {
-        win.setAlphaValue(Math.max(0.0, remSec / 0.2));
-    }
-}
+});
 
-if (sound && !sound.isNil()) {
-    sound.stop;
-}
-win.close;
+var ctrl = $.MOSWindowController.alloc.init;
+win.setDelegate(ctrl);
+
+var muteBtn = $.NSButton.alloc.initWithFrame($.NSMakeRect(28, 24, 34, 34));
+muteBtn.setTitle($(''));
+muteBtn.setBordered(false);
+muteBtn.setTransparent(true);
+muteBtn.setTarget(ctrl);
+muteBtn.setAction('onMute:');
+root.addSubview(muteBtn);
+
+var dismissBtn = $.NSButton.alloc.initWithFrame($.NSMakeRect(352, 24, 120, 36));
+dismissBtn.setTitle($(''));
+dismissBtn.setBordered(false);
+dismissBtn.setTransparent(true);
+dismissBtn.setTarget(ctrl);
+dismissBtn.setAction('onDismiss:');
+dismissBtn.setKeyEquivalent($('\r'));
+root.addSubview(dismissBtn);
+
+var escBtn = $.NSButton.alloc.initWithFrame($.NSMakeRect(0, 0, 1, 1));
+escBtn.setTitle($(''));
+escBtn.setBordered(false);
+escBtn.setTransparent(true);
+escBtn.setTarget(ctrl);
+escBtn.setAction('onDismiss:');
+escBtn.setKeyEquivalent($('\x1b'));
+root.addSubview(escBtn);
+
+$.NSTimer.scheduledTimerWithTimeIntervalTargetSelectorUserInfoRepeats(0.05, ctrl, 'onTick:', null, true);
+
+win.makeKeyAndOrderFront(null);
+app.activateIgnoringOtherApps(true);
+app.run;
 JXA_EOF
 then
     AUDIO_PID=""
