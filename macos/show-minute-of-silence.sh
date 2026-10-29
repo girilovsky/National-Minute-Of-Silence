@@ -175,36 +175,36 @@ function addLabel(lx, ly, lw, lh, text, fontSize, isBold, color, align) {
     return tf;
 }
 
-// 1. Верхній бейдж (09:00 • ХВИЛИНА МОВЧАННЯ)
-addBox(135, 282, 230, 30, makeColor(26, 28, 34, 1.0), makeColor(45, 48, 57, 1.0), 1.0, 14.0);
-addLabel(135, 287, 230, 20, '🕯️ 09:00  •  ХВИЛИНА МОВЧАННЯ', 12.0, true, makeColor(243, 244, 246, 1.0), 1);
+// 1. Верхній бейдж (09:00 • ХВИЛИНА МОВЧАННЯ) — відступ зверху 34px, текст вертикально по центру плашки
+addBox(135, 276, 230, 30, makeColor(26, 28, 34, 1.0), makeColor(45, 48, 57, 1.0), 1.0, 14.0);
+addLabel(135, 278, 230, 20, '🕯️ 09:00  •  ХВИЛИНА МОВЧАННЯ', 12.0, true, makeColor(243, 244, 246, 1.0), 1);
 
 // 2. Заголовок
-addLabel(20, 238, 460, 28, 'Загальнонаціональна хвилина мовчання', 19.0, true, makeColor(255, 255, 255, 1.0), 1);
+addLabel(20, 230, 460, 28, 'Загальнонаціональна хвилина мовчання', 19.0, true, makeColor(255, 255, 255, 1.0), 1);
 
 // 3. Опис
 addLabel(
-    36, 172, 428, 48,
+    36, 166, 428, 48,
     "Зупинимося на хвилину, щоб вшанувати пам'ять захисників,\nзахисниць та всіх українців, чиї життя забрала війна.",
     13.5, false, makeColor(156, 163, 175, 1.0), 1
 );
 
-// 4. Плашка гасла
-addBox(105, 118, 290, 36, makeColor(22, 24, 30, 1.0), makeColor(37, 39, 47, 1.0), 1.0, 10.0);
-addLabel(105, 125, 290, 22, "Пам'ятаємо.   Дякуємо.   Шануємо.", 13.5, true, makeColor(251, 191, 36, 1.0), 1);
+// 4. Плашка гасла — рівні відступи зверху і знизу всередині плашки
+addBox(105, 114, 290, 36, makeColor(22, 24, 30, 1.0), makeColor(37, 39, 47, 1.0), 1.0, 10.0);
+addLabel(105, 118, 290, 22, "Пам'ятаємо.   Дякуємо.   Шануємо.", 13.5, true, makeColor(251, 191, 36, 1.0), 1);
 
 // 5. Прогрес-бар (трек + заповнення)
 var barMaxW = 444.0;
-addBox(28, 82, barMaxW, 4, makeColor(30, 32, 38, 1.0), makeColor(30, 32, 38, 1.0), 0.0, 2.0);
-var barFill = addBox(28, 82, barMaxW, 4, makeColor(245, 158, 11, 1.0), makeColor(245, 158, 11, 1.0), 0.0, 2.0);
+addBox(28, 80, barMaxW, 4, makeColor(30, 32, 38, 1.0), makeColor(30, 32, 38, 1.0), 0.0, 2.0);
+var barFill = addBox(28, 80, barMaxW, 4, makeColor(245, 158, 11, 1.0), makeColor(245, 158, 11, 1.0), 0.0, 2.0);
 
 // 6. Футер: кнопка звуку, таймер зворотного відліку, кнопка "Зрозуміло"
-addBox(28, 24, 34, 34, makeColor(26, 28, 34, 1.0), makeColor(45, 48, 57, 1.0), 1.0, 8.0);
-var muteLabel = addLabel(28, 30, 34, 22, '🔊', 14.0, false, makeColor(243, 244, 246, 1.0), 1);
-var cdLabel = addLabel(72, 30, 220, 20, 'Закриється через ' + totalSeconds + ' с', 12.5, false, makeColor(107, 114, 128, 1.0), 0);
+addBox(28, 26, 34, 34, makeColor(26, 28, 34, 1.0), makeColor(45, 48, 57, 1.0), 1.0, 8.0);
+var muteLabel = addLabel(28, 29, 34, 22, '🔊', 14.0, false, makeColor(243, 244, 246, 1.0), 1);
+var cdLabel = addLabel(72, 31, 220, 20, 'Закриється через ' + totalSeconds + ' с', 12.5, false, makeColor(107, 114, 128, 1.0), 0);
 
-addBox(352, 24, 120, 36, makeColor(34, 37, 45, 1.0), makeColor(51, 55, 66, 1.0), 1.0, 10.0);
-addLabel(352, 31, 120, 22, 'Зрозуміло', 13.0, true, makeColor(243, 244, 246, 1.0), 1);
+addBox(352, 26, 120, 36, makeColor(34, 37, 45, 1.0), makeColor(51, 55, 66, 1.0), 1.0, 10.0);
+addLabel(352, 30, 120, 22, 'Зрозуміло', 13.0, true, makeColor(243, 244, 246, 1.0), 1);
 
 var sound = null;
 if (audioPath.length > 0) {
@@ -279,7 +279,7 @@ ObjC.registerSubclass({
 var ctrl = $.MOSWindowController.alloc.init;
 win.setDelegate(ctrl);
 
-var muteBtn = $.NSButton.alloc.initWithFrame($.NSMakeRect(28, 24, 34, 34));
+var muteBtn = $.NSButton.alloc.initWithFrame($.NSMakeRect(28, 26, 34, 34));
 muteBtn.setTitle($(''));
 muteBtn.setBordered(false);
 muteBtn.setTransparent(true);
@@ -287,7 +287,7 @@ muteBtn.setTarget(ctrl);
 muteBtn.setAction('onMute:');
 root.addSubview(muteBtn);
 
-var dismissBtn = $.NSButton.alloc.initWithFrame($.NSMakeRect(352, 24, 120, 36));
+var dismissBtn = $.NSButton.alloc.initWithFrame($.NSMakeRect(352, 26, 120, 36));
 dismissBtn.setTitle($(''));
 dismissBtn.setBordered(false);
 dismissBtn.setTransparent(true);
