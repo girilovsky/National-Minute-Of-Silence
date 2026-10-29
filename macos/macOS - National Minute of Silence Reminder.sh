@@ -187,9 +187,6 @@ for (var i = 1; i <= 2; i++) {
 var root = win.contentView;
 root.setWantsLayer(true);
 
-var alignLeft = 0;
-var alignCenter = ($.NSRunningApplication.currentApplication.executableArchitecture === 16777228) ? 1 : 2;
-
 function makeColor(r, g, b, a) {
     return $.NSColor.colorWithCalibratedRedGreenBlueAlpha(r / 255.0, g / 255.0, b / 255.0, a);
 }
@@ -208,7 +205,7 @@ function addBox(bx, by, bw, bh, fillC, borderC, borderW, radius) {
     return box;
 }
 
-function addLabel(lx, ly, lw, lh, text, fontSize, isBold, color, centered) {
+function addLabel(lx, ly, lw, lh, text, fontSize, isBold, color, align) {
     var tf = $.NSTextField.alloc.initWithFrame($.NSMakeRect(lx, ly, lw, lh));
     tf.setStringValue($(text));
     tf.setEditable(false);
@@ -217,38 +214,35 @@ function addLabel(lx, ly, lw, lh, text, fontSize, isBold, color, centered) {
     tf.setDrawsBackground(false);
     tf.setTextColor(color);
     tf.setFont(isBold ? $.NSFont.boldSystemFontOfSize(fontSize) : $.NSFont.systemFontOfSize(fontSize));
-    if (centered) {
-        tf.sizeToFit;
-        var sz = tf.frame.size;
-        var cx = lx + (lw - sz.width) / 2.0;
-        var cy = ly + (lh - sz.height) / 2.0;
-        tf.setFrameOrigin($.NSMakePoint(cx, cy));
-    }
+    tf.setAlignment(align);
     root.addSubview(tf);
     return tf;
 }
 
 addBox(135, 282, 230, 30, makeColor(26, 28, 34, 1.0), makeColor(45, 48, 57, 1.0), 1.0, 14.0);
-addLabel(135, 282, 230, 30, '🕯️ 09:00  •  ХВИЛИНА МОВЧАННЯ', 12.0, true, makeColor(243, 244, 246, 1.0), true);
+addLabel(135, 287, 230, 20, '🕯️ 09:00  •  ХВИЛИНА МОВЧАННЯ', 12.0, true, makeColor(243, 244, 246, 1.0), 1);
 
-addLabel(0, 236, width, 30, 'Загальнонаціональна хвилина мовчання', 19.0, true, makeColor(255, 255, 255, 1.0), true);
+addLabel(20, 238, 460, 28, 'Загальнонаціональна хвилина мовчання', 19.0, true, makeColor(255, 255, 255, 1.0), 1);
 
-addLabel(0, 198, width, 22, "Зупинимося на хвилину, щоб вшанувати пам'ять захисників,", 13.5, false, makeColor(156, 163, 175, 1.0), true);
-addLabel(0, 176, width, 22, "захисниць та всіх українців, чиї життя забрала війна.", 13.5, false, makeColor(156, 163, 175, 1.0), true);
+addLabel(
+    36, 172, 428, 48,
+    "Зупинимося на хвилину, щоб вшанувати пам'ять захисників,\nзахисниць та всіх українців, чиї життя забрала війна.",
+    13.5, false, makeColor(156, 163, 175, 1.0), 1
+);
 
 addBox(105, 118, 290, 36, makeColor(22, 24, 30, 1.0), makeColor(37, 39, 47, 1.0), 1.0, 10.0);
-addLabel(105, 118, 290, 36, "Пам'ятаємо.   Дякуємо.   Шануємо.", 13.5, true, makeColor(251, 191, 36, 1.0), true);
+addLabel(105, 125, 290, 22, "Пам'ятаємо.   Дякуємо.   Шануємо.", 13.5, true, makeColor(251, 191, 36, 1.0), 1);
 
 var barMaxW = 444.0;
 addBox(28, 82, barMaxW, 4, makeColor(30, 32, 38, 1.0), makeColor(30, 32, 38, 1.0), 0.0, 2.0);
 var barFill = addBox(28, 82, barMaxW, 4, makeColor(245, 158, 11, 1.0), makeColor(245, 158, 11, 1.0), 0.0, 2.0);
 
 addBox(28, 24, 34, 34, makeColor(26, 28, 34, 1.0), makeColor(45, 48, 57, 1.0), 1.0, 8.0);
-var muteLabel = addLabel(28, 24, 34, 34, '🔊', 14.0, false, makeColor(243, 244, 246, 1.0), true);
-var cdLabel = addLabel(72, 30, 220, 20, 'Закриється через ' + totalSeconds + ' с', 12.5, false, makeColor(107, 114, 128, 1.0), false);
+var muteLabel = addLabel(28, 30, 34, 22, '🔊', 14.0, false, makeColor(243, 244, 246, 1.0), 1);
+var cdLabel = addLabel(72, 30, 220, 20, 'Закриється через ' + totalSeconds + ' с', 12.5, false, makeColor(107, 114, 128, 1.0), 0);
 
 addBox(352, 24, 120, 36, makeColor(34, 37, 45, 1.0), makeColor(51, 55, 66, 1.0), 1.0, 10.0);
-addLabel(352, 24, 120, 36, 'Зрозуміло', 13.0, true, makeColor(243, 244, 246, 1.0), true);
+addLabel(352, 31, 120, 22, 'Зрозуміло', 13.0, true, makeColor(243, 244, 246, 1.0), 1);
 
 var sound = null;
 if (audioPath.length > 0) {
