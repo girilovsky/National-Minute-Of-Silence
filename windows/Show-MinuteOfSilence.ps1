@@ -106,7 +106,7 @@ public static extern bool SetProcessDpiAwarenessContext(System.IntPtr ctx);
         } catch {}
     }
 
-    $script:defaultVolume = 0.25
+    $script:defaultVolume = 0.10
     if ($officialMp3Path) {
         try {
             $script:mediaPlayer = New-Object System.Windows.Media.MediaPlayer
@@ -128,7 +128,7 @@ public static extern bool SetProcessDpiAwarenessContext(System.IntPtr ctx);
             if (-not (Test-Path $wavPath) -or (Get-Item $wavPath).Length -lt 1000) {
                 $sampleRate = 44100
                 $durationSeconds = 0.05
-                $peakVolume = 0.25
+                $peakVolume = 0.10
 
                 $numSamples = [int]($sampleRate * $durationSeconds)
                 $subChunk2Size = $numSamples * 2

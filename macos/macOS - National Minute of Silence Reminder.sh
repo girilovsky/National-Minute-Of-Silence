@@ -144,7 +144,7 @@ fi
 
 AUDIO_PID=""
 if [[ -n "$AUDIO_PATH" && -x /usr/bin/afplay ]]; then
-    /usr/bin/afplay -v 0.25 "$AUDIO_PATH" &
+    /usr/bin/afplay -v 0.10 "$AUDIO_PATH" &
     AUDIO_PID=$!
 fi
 
@@ -164,6 +164,7 @@ if [[ -x "$DIALOG_BIN" ]]; then
         --message "$MESSAGE" \
         --ontop \
         --timer 60 \
+        --height 260 \
         --button1text "Зрозуміло" \
         --position center \
         --icon "SF=flame.fill,colour=#F59E0B" \
