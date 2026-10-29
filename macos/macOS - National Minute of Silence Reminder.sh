@@ -152,7 +152,7 @@ ObjC.import('WebKit');
 var env = $.NSProcessInfo.processInfo.environment;
 var audioPath = ObjC.unwrap(env.objectForKey($('MOS_AUDIO_PATH'))) || '';
 var totalSeconds = parseInt(ObjC.unwrap(env.objectForKey($('MOS_DURATION'))) || '60', 10);
-var defaultVolume = 0.15;
+var defaultVolume = 0.10;
 
 var app = $.NSApplication.sharedApplication;
 app.setActivationPolicy($.NSApplicationActivationPolicyAccessory);
@@ -315,7 +315,7 @@ JXA_EOF
 then
     AUDIO_PID=""
     if [[ -n "$AUDIO_PATH" && -x /usr/bin/afplay ]]; then
-        /usr/bin/afplay -v 0.15 "$AUDIO_PATH" &
+        /usr/bin/afplay -v 0.10 "$AUDIO_PATH" &
         AUDIO_PID=$!
     fi
     /usr/bin/osascript -e 'use framework "Cocoa"' \
