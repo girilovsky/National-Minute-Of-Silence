@@ -78,17 +78,27 @@ $settings = New-ScheduledTaskSettingsSet `
     -MultipleInstances IgnoreNew
 
 $existingTask = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
-if ($existingTask) {
-    Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
+if (-not $existingTask) {
+    $registeredTask = Register-ScheduledTask `
+        -TaskName $TaskName `
+        -Action $action `
+        -Trigger $trigger `
+        -Settings $settings `
+        -Description "Daily National Minute of Silence reminder at 09:00" `
+        -Force
+    Write-Host "SUCCESS: Scheduled task '$TaskName' registered. Next run at 09:00." -ForegroundColor Green
+} else {
+    try {
+        Register-ScheduledTask `
+            -TaskName $TaskName `
+            -Action $action `
+            -Trigger $trigger `
+            -Settings $settings `
+            -Description "Daily National Minute of Silence reminder at 09:00" `
+            -Force -ErrorAction Stop | Out-Null
+        Write-Host "SUCCESS: Scheduled task '$TaskName' updated. Next run at 09:00." -ForegroundColor Green
+    } catch {
+        Write-Host "SUCCESS: Scheduled task '$TaskName' already registered and payload updated." -ForegroundColor Green
+    }
 }
-
-$registeredTask = Register-ScheduledTask `
-    -TaskName $TaskName `
-    -Action $action `
-    -Trigger $trigger `
-    -Settings $settings `
-    -Description "Daily National Minute of Silence reminder at 09:00" `
-    -Force
-
-Write-Host "SUCCESS: Scheduled task '$TaskName' registered. Next run at 09:00." -ForegroundColor Green
 exit 0
