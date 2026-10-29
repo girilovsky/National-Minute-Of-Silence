@@ -268,7 +268,7 @@ if (audioPath.length > 0) {
     sound = $.NSSound.alloc.initWithContentsOfFileByReference($(audioPath), true);
     if (sound && !sound.isNil()) {
         sound.setVolume(defaultVolume);
-        sound.play();
+        sound.play;
     }
 }
 
@@ -281,7 +281,7 @@ var lastAction = '';
 
 while (true) {
     $.NSRunLoop.currentRunLoop.runUntilDate($.NSDate.dateWithTimeIntervalSinceNow(0.04));
-    if (!win.isVisible()) break;
+    if (!win.isVisible) break;
     var elapsedSec = (Date.now() - startTime) / 1000.0;
     var remSec = totalSeconds - elapsedSec;
     var titleCmd = ObjC.unwrap(webView.title) || '';
@@ -308,9 +308,9 @@ while (true) {
 }
 
 if (sound && !sound.isNil()) {
-    sound.stop();
+    sound.stop;
 }
-win.close();
+win.close;
 JXA_EOF
 then
     AUDIO_PID=""
