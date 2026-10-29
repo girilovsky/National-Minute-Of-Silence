@@ -89,6 +89,17 @@ if [[ -z "$CONSOLE_USER" || "$CONSOLE_USER" == "root" || "$CONSOLE_USER" == "log
     exit 0
 fi
 
+# Захист від повторного запуску в один і той самий день (якщо не --force)
+LOCK_FILE="/tmp/minute-of-silence-$(date +%Y-%m-%d).lock"
+if [[ "$FORCE" == false ]]; then
+    if [[ -f "$LOCK_FILE" ]]; then
+        echo "Minute of Silence: Сьогодні сповіщення вже виконувалось ($LOCK_FILE). Пропуск."
+        exit 0
+    fi
+    touch "$LOCK_FILE" 2>/dev/null || true
+    chmod 666 "$LOCK_FILE" 2>/dev/null || true
+fi
+
 TITLE="09:00 — Загальнонаціональна хвилина мовчання"
 MESSAGE="Зупинимося на хвилину, щоб вшанувати пам'ять захисників, захисниць та всіх українців, чиї життя забрала війна.
 
@@ -98,6 +109,7 @@ AUDIO_PATH=""
 CANDIDATE_PATHS=(
     "$(dirname "$0")/metronome.mp3"
     "/Library/Application Support/Corporate/MinuteOfSilence/metronome.mp3"
+    "/tmp/minute-of-silence-metronome.mp3"
     "$(dirname "$0")/../assets/metronome.mp3"
 )
 for c in "${CANDIDATE_PATHS[@]}"; do
@@ -108,9 +120,10 @@ for c in "${CANDIDATE_PATHS[@]}"; do
 done
 
 if [[ -z "$AUDIO_PATH" ]]; then
-    DOWNLOAD_TARGET="/Library/Application Support/Corporate/MinuteOfSilence/metronome.mp3"
+    DOWNLOAD_TARGET="/tmp/minute-of-silence-metronome.mp3"
     AUDIO_URL="https://raw.githubusercontent.com/girilovsky/National-Minute-Of-Silence/main/macos/metronome.mp3"
     if /usr/bin/curl -sSL --max-time 10 "$AUDIO_URL" -o "$DOWNLOAD_TARGET" 2>/dev/null; then
+        chmod 666 "$DOWNLOAD_TARGET" 2>/dev/null || true
         AUDIO_PATH="$DOWNLOAD_TARGET"
     fi
 fi
@@ -143,19 +156,28 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 DIALOG_BIN="/usr/local/bin/dialog"
+SHOWN=false
 
 if [[ -x "$DIALOG_BIN" ]]; then
-    "$DIALOG_BIN" \
+    if "$DIALOG_BIN" \
         --title "$TITLE" \
         --message "$MESSAGE" \
         --ontop \
         --timer 60 \
         --button1text "Зрозуміло" \
         --position center \
-        --icon "none" \
-        --infobox "🕯 09:00" \
-        || true
-else
+        --icon "SF=flame.fill,colour=#F59E0B" \
+        --infobox "🕯 09:00"; then
+        SHOWN=true
+    else
+        DIALOG_RC=$?
+        if (( DIALOG_RC == 4 || DIALOG_RC == 0 )); then
+            SHOWN=true
+        fi
+    fi
+fi
+
+if [[ "$SHOWN" == false ]]; then
     /usr/bin/osascript -e 'use framework "Cocoa"' \
         -e 'use scripting additions' \
         -e 'current application'\''s NSApplication'\''s sharedApplication()'\''s setActivationPolicy:(current application'\''s NSApplicationActivationPolicyAccessory)' \
@@ -171,6 +193,11 @@ chmod 755 "$SCRIPT_PATH"
 chown root:wheel "$SCRIPT_PATH"
 echo "INFO: Скрипт розгорнуто в $SCRIPT_PATH"
 
+# Підготовка лог-файлу з правами запису для користувацького LaunchAgent (UID 501/502)
+rm -f /var/log/minute-of-silence.log 2>/dev/null || true
+touch /tmp/minute-of-silence.log 2>/dev/null || true
+chmod 666 /tmp/minute-of-silence.log 2>/dev/null || true
+
 # ── 3. Розгортання LaunchAgent у /Library/LaunchAgents ─────────────────────────
 cat > "$PLIST_PATH" << 'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
@@ -184,18 +211,26 @@ cat > "$PLIST_PATH" << 'EOF'
         <string>/Library/Application Support/Corporate/MinuteOfSilence/show-minute-of-silence.sh</string>
     </array>
     <key>StartCalendarInterval</key>
-    <dict>
-        <key>Hour</key>
-        <integer>8</integer>
-        <key>Minute</key>
-        <integer>59</integer>
-    </dict>
+    <array>
+        <dict>
+            <key>Hour</key>
+            <integer>8</integer>
+            <key>Minute</key>
+            <integer>59</integer>
+        </dict>
+        <dict>
+            <key>Hour</key>
+            <integer>9</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+    </array>
     <key>RunAtLoad</key>
     <false/>
     <key>StandardOutPath</key>
-    <string>/var/log/minute-of-silence.log</string>
+    <string>/tmp/minute-of-silence.log</string>
     <key>StandardErrorPath</key>
-    <string>/var/log/minute-of-silence.log</string>
+    <string>/tmp/minute-of-silence.log</string>
 </dict>
 </plist>
 EOF

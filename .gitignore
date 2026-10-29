@@ -12,3 +12,5 @@ desktop.ini
 *.tmp
 *~
 *.bak
+
+graphify-out/

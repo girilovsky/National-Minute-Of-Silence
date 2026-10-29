@@ -40,6 +40,17 @@ if [[ -z "$CONSOLE_USER" || "$CONSOLE_USER" == "root" || "$CONSOLE_USER" == "log
     exit 0
 fi
 
+# Захист від повторного запуску в один і той самий день (якщо не --force)
+LOCK_FILE="/tmp/minute-of-silence-$(date +%Y-%m-%d).lock"
+if [[ "$FORCE" == false ]]; then
+    if [[ -f "$LOCK_FILE" ]]; then
+        echo "Minute of Silence: Сьогодні сповіщення вже виконувалось ($LOCK_FILE). Пропуск."
+        exit 0
+    fi
+    touch "$LOCK_FILE" 2>/dev/null || true
+    chmod 666 "$LOCK_FILE" 2>/dev/null || true
+fi
+
 TITLE="09:00 — Загальнонаціональна хвилина мовчання"
 MESSAGE="Зупинимося на хвилину, щоб вшанувати пам'ять захисників, захисниць та всіх українців, чиї життя забрала війна.
 
@@ -50,6 +61,7 @@ AUDIO_PATH=""
 CANDIDATE_PATHS=(
     "$(dirname "$0")/metronome.mp3"
     "/Library/Application Support/Corporate/MinuteOfSilence/metronome.mp3"
+    "/tmp/minute-of-silence-metronome.mp3"
     "$(dirname "$0")/../assets/metronome.mp3"
 )
 for c in "${CANDIDATE_PATHS[@]}"; do
@@ -60,9 +72,10 @@ for c in "${CANDIDATE_PATHS[@]}"; do
 done
 
 if [[ -z "$AUDIO_PATH" ]]; then
-    DOWNLOAD_TARGET="/Library/Application Support/Corporate/MinuteOfSilence/metronome.mp3"
+    DOWNLOAD_TARGET="/tmp/minute-of-silence-metronome.mp3"
     AUDIO_URL="https://raw.githubusercontent.com/girilovsky/National-Minute-Of-Silence/main/macos/metronome.mp3"
     if /usr/bin/curl -sSL --max-time 10 "$AUDIO_URL" -o "$DOWNLOAD_TARGET" 2>/dev/null; then
+        chmod 666 "$DOWNLOAD_TARGET" 2>/dev/null || true
         AUDIO_PATH="$DOWNLOAD_TARGET"
     fi
 fi
@@ -97,20 +110,30 @@ trap cleanup EXIT INT TERM
 
 # ── 6. Відображення: swiftDialog (якщо є) або рідний AppleScript без System Events ─
 DIALOG_BIN="/usr/local/bin/dialog"
+SHOWN=false
 
 if [[ -x "$DIALOG_BIN" ]]; then
     echo "Minute of Silence: Відображення через swiftDialog..."
-    "$DIALOG_BIN" \
+    if "$DIALOG_BIN" \
         --title "$TITLE" \
         --message "$MESSAGE" \
         --ontop \
         --timer 60 \
         --button1text "Зрозуміло" \
         --position center \
-        --icon "none" \
-        --infobox "🕯 09:00" \
-        || true
-else
+        --icon "SF=flame.fill,colour=#F59E0B" \
+        --infobox "🕯 09:00"; then
+        SHOWN=true
+    else
+        DIALOG_RC=$?
+        # Exit code 4 = timer expired (normal after 60s), 0 = button1 clicked
+        if (( DIALOG_RC == 4 || DIALOG_RC == 0 )); then
+            SHOWN=true
+        fi
+    fi
+fi
+
+if [[ "$SHOWN" == false ]]; then
     echo "Minute of Silence: Відображення через нативний osascript (Cocoa + StandardAdditions без TCC)..."
     /usr/bin/osascript -e 'use framework "Cocoa"' \
         -e 'use scripting additions' \
