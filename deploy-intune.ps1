@@ -1,14 +1,15 @@
-﻿<#
+<#
 .SYNOPSIS
     Deploys the National Minute of Silence reminder scripts to Microsoft Intune
     for Windows and macOS, targeting the IT Core group.
 
 .DESCRIPTION
     1. Authenticates via MicrosoftTokenBridge (or existing MgGraph session).
-    2. Resolves Entra ID groups (Target: IT Core, Exclusion: [Dist] Minute of Silence - Exclusions).
-    3. Creates or updates Windows Device Management Script ("Windows - National Minute of Silence Reminder").
-    4. Creates or updates macOS Device Shell Script ("macOS - National Minute of Silence Reminder").
-    5. Assigns scripts to the target group.
+    2. Resolves Entra ID groups (Target: IT Core).
+    3. Deletes existing scripts and creates fresh IDs for mandatory re-execution (per intune-macos-scripts.md).
+    4. Creates Windows Device Management Script ("Windows - National Minute of Silence Reminder").
+    5. Creates macOS Device Shell Script ("macOS - National Minute of Silence Reminder").
+    6. Assigns scripts to the target group.
 #>
 
 param(
@@ -92,7 +93,7 @@ if (-not $primaryGroup) { $primaryGroup = $matchedTarget[0] }
 Write-Host "`nSelected Primary Target Group: '$($primaryGroup.displayName)' ($($primaryGroup.id))`n" -ForegroundColor Green
 
 
-# 3. Deploy Windows Script
+# 3. Deploy Windows Script (Delete & Recreate for clean IME execution)
 $winScriptPath = Join-Path $PSScriptRoot "windows\Windows - National Minute of Silence Reminder.ps1"
 if (-not (Test-Path $winScriptPath)) {
     throw "Windows script not found at '$winScriptPath'."
@@ -106,36 +107,29 @@ $winDescription = "Нагадування про загальнонаціона�
 
 Write-Host "Checking Windows Device Management Scripts in Intune..." -ForegroundColor Yellow
 $winScriptsUri = "https://graph.microsoft.com/beta/deviceManagement/deviceManagementScripts"
-$allWin = Invoke-IntuneGraphRequest -Method GET -Uri $winScriptsUri; $existingWin = @{ value = @($allWin.value | Where-Object { $_.displayName -eq $winDisplayName }) }
+$allWin = Invoke-IntuneGraphRequest -Method GET -Uri $winScriptsUri
+$existingWin = @($allWin.value | Where-Object { $_.displayName -eq $winDisplayName })
 
-$winScriptId = $null
-if ($existingWin.value -and $existingWin.value.Count -gt 0) {
-    $winScriptId = $existingWin.value[0].id
-    Write-Host "Found existing Windows script '$winDisplayName' ($winScriptId). Updating content..." -ForegroundColor Cyan
-    $patchBody = @{
-        description           = $winDescription
-        scriptContent         = $winScriptB64
-        runAsAccount          = "user"
-        enforceSignatureCheck = $false
-        runAs32Bit            = $false
-    } | ConvertTo-Json
-    Invoke-IntuneGraphRequest -Method PATCH -Uri "$winScriptsUri/$winScriptId" -Body $patchBody
-    Write-Host "[OK] Windows script updated successfully." -ForegroundColor Green
-} else {
-    Write-Host "Creating new Windows script '$winDisplayName'..." -ForegroundColor Cyan
-    $postBody = @{
-        displayName           = $winDisplayName
-        description           = $winDescription
-        scriptContent         = $winScriptB64
-        runAsAccount          = "user"
-        enforceSignatureCheck = $false
-        runAs32Bit            = $false
-        fileName              = $winFileName
-    } | ConvertTo-Json
-    $createdWin = Invoke-IntuneGraphRequest -Method POST -Uri $winScriptsUri -Body $postBody
-    $winScriptId = $createdWin.id
-    Write-Host "[OK] Created Windows script with ID: $winScriptId." -ForegroundColor Green
+if ($existingWin.Count -gt 0) {
+    foreach ($oldWin in $existingWin) {
+        Write-Host "Deleting existing Windows script ID: $($oldWin.id)..." -ForegroundColor Yellow
+        Invoke-IntuneGraphRequest -Method DELETE -Uri "$winScriptsUri/$($oldWin.id)"
+    }
 }
+
+Write-Host "Creating fresh Windows script '$winDisplayName'..." -ForegroundColor Cyan
+$postBody = @{
+    displayName           = $winDisplayName
+    description           = $winDescription
+    scriptContent         = $winScriptB64
+    runAsAccount          = "user"
+    enforceSignatureCheck = $false
+    runAs32Bit            = $false
+    fileName              = $winFileName
+} | ConvertTo-Json
+$createdWin = Invoke-IntuneGraphRequest -Method POST -Uri $winScriptsUri -Body $postBody
+$winScriptId = $createdWin.id
+Write-Host "[OK] Created Windows script with fresh ID: $winScriptId." -ForegroundColor Green
 
 # Assign Windows Script
 Write-Host "Assigning Windows script to '$($primaryGroup.displayName)'..." -ForegroundColor Yellow
@@ -149,7 +143,8 @@ $winAssignBody = @{
 Invoke-IntuneGraphRequest -Method POST -Uri "$winScriptsUri/$winScriptId/assign" -Body $winAssignBody
 Write-Host "[OK] Windows script assigned successfully.`n" -ForegroundColor Green
 
-# 4. Deploy macOS Shell Script
+
+# 4. Deploy macOS Shell Script (Delete & Recreate per intune-macos-scripts.md)
 $macScriptPath = Join-Path $PSScriptRoot "macos\macOS - National Minute of Silence Reminder.sh"
 if (-not (Test-Path $macScriptPath)) {
     throw "macOS script not found at '$macScriptPath'."
@@ -163,36 +158,29 @@ $macDescription = "Нагадування про загальнонаціона�
 
 Write-Host "Checking macOS Device Shell Scripts in Intune..." -ForegroundColor Yellow
 $macScriptsUri = "https://graph.microsoft.com/beta/deviceManagement/deviceShellScripts"
-$allMac = Invoke-IntuneGraphRequest -Method GET -Uri $macScriptsUri; $existingMac = @{ value = @($allMac.value | Where-Object { $_.displayName -eq $macDisplayName }) }
+$allMac = Invoke-IntuneGraphRequest -Method GET -Uri $macScriptsUri
+$existingMac = @($allMac.value | Where-Object { $_.displayName -eq $macDisplayName })
 
-$macScriptId = $null
-if ($existingMac.value -and $existingMac.value.Count -gt 0) {
-    $macScriptId = $existingMac.value[0].id
-    Write-Host "Found existing macOS script '$macDisplayName' ($macScriptId). Updating content..." -ForegroundColor Cyan
-    $patchBody = @{
-        description                 = $macDescription
-        scriptContent               = $macScriptB64
-        runAsAccount                = "system"
-        blockExecutionNotifications = $true
-        retryCount                  = 3
-    } | ConvertTo-Json
-    Invoke-IntuneGraphRequest -Method PATCH -Uri "$macScriptsUri/$macScriptId" -Body $patchBody
-    Write-Host "[OK] macOS script updated successfully." -ForegroundColor Green
-} else {
-    Write-Host "Creating new macOS shell script '$macDisplayName'..." -ForegroundColor Cyan
-    $postBody = @{
-        displayName                 = $macDisplayName
-        description                 = $macDescription
-        scriptContent               = $macScriptB64
-        runAsAccount                = "system"
-        blockExecutionNotifications = $true
-        retryCount                  = 3
-        fileName                    = $macFileName
-    } | ConvertTo-Json
-    $createdMac = Invoke-IntuneGraphRequest -Method POST -Uri $macScriptsUri -Body $postBody
-    $macScriptId = $createdMac.id
-    Write-Host "[OK] Created macOS shell script with ID: $macScriptId." -ForegroundColor Green
+if ($existingMac.Count -gt 0) {
+    foreach ($oldMac in $existingMac) {
+        Write-Host "Deleting existing macOS shell script ID: $($oldMac.id)..." -ForegroundColor Yellow
+        Invoke-IntuneGraphRequest -Method DELETE -Uri "$macScriptsUri/$($oldMac.id)"
+    }
 }
+
+Write-Host "Creating fresh macOS shell script '$macDisplayName'..." -ForegroundColor Cyan
+$postBody = @{
+    displayName                 = $macDisplayName
+    description                 = $macDescription
+    scriptContent               = $macScriptB64
+    runAsAccount                = "system"
+    blockExecutionNotifications = $true
+    retryCount                  = 3
+    fileName                    = $macFileName
+} | ConvertTo-Json
+$createdMac = Invoke-IntuneGraphRequest -Method POST -Uri $macScriptsUri -Body $postBody
+$macScriptId = $createdMac.id
+Write-Host "[OK] Created macOS shell script with fresh ID: $macScriptId." -ForegroundColor Green
 
 # Assign macOS Script
 Write-Host "Assigning macOS script to '$($primaryGroup.displayName)'..." -ForegroundColor Yellow
