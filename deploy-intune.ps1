@@ -28,7 +28,8 @@ $hasTokenBridge = $false
 try {
     $testToken = Get-MicrosoftToken -Tenant gth -ErrorAction Stop
     if ($testToken) { $hasTokenBridge = $true }
-} catch {}
+}
+catch {}
 
 if (-not $hasTokenBridge) {
     Import-Module Microsoft.Graph.Authentication -ErrorAction SilentlyContinue
@@ -42,10 +43,12 @@ function Invoke-IntuneGraphRequest([string]$Method, [string]$Uri, $Body = $null,
     if ($hasTokenBridge) {
         if ($null -ne $Body) {
             return Invoke-MicrosoftGraph -Method $Method -Uri $Uri -Body $Body
-        } else {
+        }
+        else {
             return Invoke-MicrosoftGraph -Method $Method -Uri $Uri
         }
-    } else {
+    }
+    else {
         $params = @{ Method = $Method; Uri = $Uri }
         if ($null -ne $Body) { $params.Body = $Body; $params.ContentType = $ContentType }
         return Invoke-MgGraphRequest @params
@@ -199,17 +202,17 @@ Write-Host "==========================================================" -Foregro
 Write-Host " Intune Deployment Summary                                " -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Green
 [PSCustomObject]@{
-    Platform = "Windows"
-    DisplayName = $winDisplayName
-    Id = $winScriptId
+    Platform     = "Windows"
+    DisplayName  = $winDisplayName
+    Id           = $winScriptId
     RunAsAccount = "user"
-    TargetGroup = $primaryGroup.displayName
+    TargetGroup  = $primaryGroup.displayName
 } | Format-Table -AutoSize
 
 [PSCustomObject]@{
-    Platform = "macOS"
-    DisplayName = $macDisplayName
-    Id = $macScriptId
+    Platform     = "macOS"
+    DisplayName  = $macDisplayName
+    Id           = $macScriptId
     RunAsAccount = "system"
-    TargetGroup = $primaryGroup.displayName
+    TargetGroup  = $primaryGroup.displayName
 } | Format-Table -AutoSize
