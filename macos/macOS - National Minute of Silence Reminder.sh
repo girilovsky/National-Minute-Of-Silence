@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # [Intune Shell Script] macOS - National Minute of Silence Reminder
-# Розгортає щоденне нагадування про загальнонаціональну хвилину мовчання о 09:00 для macOS.
+# Розгортає щоденне нагадування про загальнонаціональну хвилину пам'яті о 09:00 для macOS.
 #
 # Налаштування Intune:
 #   * Name: macOS - National Minute of Silence Reminder
@@ -100,7 +100,7 @@ if [[ "$FORCE" == false ]]; then
     chmod 666 "$LOCK_FILE" 2>/dev/null || true
 fi
 
-TITLE="09:00 — Загальнонаціональна хвилина мовчання"
+TITLE="09:00 — Загальнонаціональна хвилина пам'яті"
 MESSAGE="Зупинимося на хвилину, щоб вшанувати пам'ять захисників, захисниць та всіх українців, чиї життя забрала війна.
 
 Пам'ятаємо. Дякуємо. Шануємо."
@@ -169,7 +169,7 @@ var win = $.NSWindow.alloc.initWithContentRectStyleMaskBackingDefer(
     $.NSBackingStoreBuffered,
     false
 );
-win.setTitle($('Хвилина мовчання'));
+win.setTitle($('Хвилина пам\'яті'));
 win.setTitlebarAppearsTransparent(true);
 win.setTitleVisibility(1);
 win.setOpaque(true);
@@ -220,9 +220,9 @@ function addLabel(lx, ly, lw, lh, text, fontSize, isBold, color, align) {
 }
 
 addBox(135, 276, 230, 30, makeColor(26, 28, 34, 1.0), makeColor(45, 48, 57, 1.0), 1.0, 14.0);
-addLabel(135, 278, 230, 20, '🕯️ 09:00  •  ХВИЛИНА МОВЧАННЯ', 12.0, true, makeColor(243, 244, 246, 1.0), 1);
+addLabel(135, 278, 230, 20, '🕯️ 09:00  •  ХВИЛИНА ПАМ\'ЯТІ', 12.0, true, makeColor(243, 244, 246, 1.0), 1);
 
-addLabel(20, 230, 460, 28, 'Загальнонаціональна хвилина мовчання', 19.0, true, makeColor(255, 255, 255, 1.0), 1);
+addLabel(20, 230, 460, 28, 'Загальнонаціональна хвилина пам\'яті', 19.0, true, makeColor(255, 255, 255, 1.0), 1);
 
 addLabel(
     36, 166, 428, 48,

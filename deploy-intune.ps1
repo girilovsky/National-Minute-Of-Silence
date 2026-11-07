@@ -1,19 +1,19 @@
 <#
 .SYNOPSIS
     Deploys the National Minute of Silence reminder scripts to Microsoft Intune
-    for Windows and macOS, targeting the IT Core group.
+    for Windows and macOS, targeting the IT Core and HR Office pilot groups.
 
 .DESCRIPTION
     1. Authenticates via MicrosoftTokenBridge (or existing MgGraph session).
-    2. Resolves Entra ID groups (Target: IT Core).
+    2. Resolves Entra ID target groups (IT Core Service Unit, [User] HR Office RnD).
     3. Deletes existing scripts and creates fresh IDs for mandatory re-execution (per intune-macos-scripts.md).
     4. Creates Windows Device Management Script ("Windows - National Minute of Silence Reminder").
     5. Creates macOS Device Shell Script ("macOS - National Minute of Silence Reminder").
-    6. Assigns scripts to the target group.
+    6. Assigns scripts to all target groups.
 #>
 
 param(
-    [string]$TargetGroupName = "IT Core"
+    [string[]]$TargetGroupNames = @("IT Core Service Unit", "[User] HR Office RnD")
 )
 
 $ErrorActionPreference = 'Stop'
@@ -73,28 +73,26 @@ while ($nextUri) {
     $nextUri = $res.'@odata.nextLink'
 }
 
-$matchedTarget = $allGroups | Where-Object { 
-    $_.displayName -eq $TargetGroupName -or 
-    $_.displayName -eq "[Dist] $TargetGroupName" -or 
-    $_.displayName -eq "[User] $TargetGroupName" -or
-    $_.displayName -like "*$TargetGroupName*"
+$targetGroups = @()
+foreach ($tgName in $TargetGroupNames) {
+    $matched = $allGroups | Where-Object { 
+        $_.displayName -eq $tgName -or 
+        $_.displayName -eq "[Dist] $tgName" -or 
+        $_.displayName -eq "[User] $tgName" -or
+        $_.displayName -like "*$tgName*"
+    } | Select-Object -First 1
+    
+    if ($matched) {
+        $targetGroups += $matched
+        Write-Host "Target Group: '$($matched.displayName)' ($($matched.id))" -ForegroundColor Green
+    } else {
+        Write-Warning "Target group '$tgName' not found."
+    }
 }
 
-if (-not $matchedTarget) {
-    throw "Target group matching '$TargetGroupName' not found in Entra ID."
+if ($targetGroups.Count -eq 0) {
+    throw "No target groups resolved."
 }
-
-Write-Host "Found matching target groups:" -ForegroundColor Cyan
-$matchedTarget | ForEach-Object { Write-Host " - $($_.displayName) (ID: $($_.id))" }
-
-# Pick primary IT Core group
-$primaryGroup = $matchedTarget | Where-Object { $_.displayName -eq $TargetGroupName }
-if (-not $primaryGroup) { $primaryGroup = $matchedTarget | Where-Object { $_.displayName -eq "[Dist] $TargetGroupName" } }
-if (-not $primaryGroup) { $primaryGroup = $matchedTarget | Where-Object { $_.displayName -eq "[User] $TargetGroupName" } }
-if (-not $primaryGroup) { $primaryGroup = $matchedTarget[0] }
-
-Write-Host "`nSelected Primary Target Group: '$($primaryGroup.displayName)' ($($primaryGroup.id))`n" -ForegroundColor Green
-
 
 # 3. Deploy Windows Script (Delete & Recreate for clean IME execution)
 $winScriptPath = Join-Path $PSScriptRoot "windows\Windows - National Minute of Silence Reminder.ps1"
@@ -106,9 +104,9 @@ $winScriptContent = Get-Content -Path $winScriptPath -Raw -Encoding UTF8
 $winScriptB64 = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($winScriptContent))
 $winDisplayName = "Windows - National Minute of Silence Reminder"
 $winFileName = "Windows - National Minute of Silence Reminder.ps1"
-$winDescription = "Нагадування про загальнонаціональну хвилину мовчання о 09:00 (управління через Планувальник завдань у контексті користувача з точним NTP-синхроном)."
+$winDescription = "Нагадування про загальнонаціональну хвилину пам'яті о 09:00 (управління через Планувальник завдань у контексті користувача з точним NTP-синхроном)."
 
-Write-Host "Checking Windows Device Management Scripts in Intune..." -ForegroundColor Yellow
+Write-Host "`nChecking Windows Device Management Scripts in Intune..." -ForegroundColor Yellow
 $winScriptsUri = "https://graph.microsoft.com/beta/deviceManagement/deviceManagementScripts"
 $allWin = Invoke-IntuneGraphRequest -Method GET -Uri $winScriptsUri
 $existingWin = @($allWin.value | Where-Object { $_.displayName -eq $winDisplayName })
@@ -135,13 +133,9 @@ $winScriptId = $createdWin.id
 Write-Host "[OK] Created Windows script with fresh ID: $winScriptId." -ForegroundColor Green
 
 # Assign Windows Script
-Write-Host "Assigning Windows script to '$($primaryGroup.displayName)'..." -ForegroundColor Yellow
+Write-Host "Assigning Windows script to target groups..." -ForegroundColor Yellow
 $winAssignBody = @{
-    deviceManagementScriptGroupAssignments = @(
-        @{
-            targetGroupId = $primaryGroup.id
-        }
-    )
+    deviceManagementScriptGroupAssignments = @($targetGroups | ForEach-Object { @{ targetGroupId = $_.id } })
 } | ConvertTo-Json -Depth 5
 Invoke-IntuneGraphRequest -Method POST -Uri "$winScriptsUri/$winScriptId/assign" -Body $winAssignBody
 Write-Host "[OK] Windows script assigned successfully.`n" -ForegroundColor Green
@@ -157,7 +151,7 @@ $macScriptBytes = [System.IO.File]::ReadAllBytes($macScriptPath)
 $macScriptB64 = [Convert]::ToBase64String($macScriptBytes)
 $macDisplayName = "macOS - National Minute of Silence Reminder"
 $macFileName = "macOS - National Minute of Silence Reminder.sh"
-$macDescription = "Нагадування про загальнонаціональну хвилину мовчання о 09:00 (LaunchAgent + swiftDialog / osascript з перевіркою часового вікна)."
+$macDescription = "Нагадування про загальнонаціональну хвилину пам'яті о 09:00 (LaunchAgent + swiftDialog / osascript з перевіркою часового вікна)."
 
 Write-Host "Checking macOS Device Shell Scripts in Intune..." -ForegroundColor Yellow
 $macScriptsUri = "https://graph.microsoft.com/beta/deviceManagement/deviceShellScripts"
@@ -186,13 +180,9 @@ $macScriptId = $createdMac.id
 Write-Host "[OK] Created macOS shell script with fresh ID: $macScriptId." -ForegroundColor Green
 
 # Assign macOS Script
-Write-Host "Assigning macOS script to '$($primaryGroup.displayName)'..." -ForegroundColor Yellow
+Write-Host "Assigning macOS script to target groups..." -ForegroundColor Yellow
 $macAssignBody = @{
-    deviceManagementScriptGroupAssignments = @(
-        @{
-            targetGroupId = $primaryGroup.id
-        }
-    )
+    deviceManagementScriptGroupAssignments = @($targetGroups | ForEach-Object { @{ targetGroupId = $_.id } })
 } | ConvertTo-Json -Depth 5
 Invoke-IntuneGraphRequest -Method POST -Uri "$macScriptsUri/$macScriptId/assign" -Body $macAssignBody
 Write-Host "[OK] macOS script assigned successfully.`n" -ForegroundColor Green
@@ -201,12 +191,13 @@ Write-Host "[OK] macOS script assigned successfully.`n" -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Green
 Write-Host " Intune Deployment Summary                                " -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Green
+$targetGroupsDesc = ($targetGroups | ForEach-Object { $_.displayName }) -join ", "
 [PSCustomObject]@{
     Platform     = "Windows"
     DisplayName  = $winDisplayName
     Id           = $winScriptId
     RunAsAccount = "user"
-    TargetGroup  = $primaryGroup.displayName
+    TargetGroups = $targetGroupsDesc
 } | Format-Table -AutoSize
 
 [PSCustomObject]@{
@@ -214,5 +205,5 @@ Write-Host "==========================================================" -Foregro
     DisplayName  = $macDisplayName
     Id           = $macScriptId
     RunAsAccount = "system"
-    TargetGroup  = $primaryGroup.displayName
+    TargetGroups = $targetGroupsDesc
 } | Format-Table -AutoSize

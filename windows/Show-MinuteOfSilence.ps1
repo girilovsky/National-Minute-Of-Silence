@@ -1,11 +1,11 @@
 ﻿<#
 .SYNOPSIS
-    Відображає вікно щоденного нагадування про загальнонаціональну хвилину мовчання о 09:00.
+    Відображає вікно щоденного нагадування про загальнонаціональну хвилину пам'яті о 09:00.
 
 .DESCRIPTION
     Графічне меморіальне сповіщення (WPF/XAML) у сучасному стилі:
     - Відображається поверх інших вікон (TopMost).
-    - Автоматично закривається після закінчення хвилини мовчання (60 сек).
+    - Автоматично закривається після закінчення хвилини пам'яті (60 сек).
     - Відтворює калібрований аудіотрек метронома пам'яті (60.0 BPM).
     - У разі відсутності файлу MP3 автоматично вмикає вбудований синтезований метроном пам'яті.
     - Можливість вимкнути звук кнопкою 🔊/🔇 або параметром -NoSound.
@@ -175,7 +175,7 @@ public static extern bool SetProcessDpiAwarenessContext(System.IntPtr ctx);
     $xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Хвилина мовчання"
+        Title="Хвилина пам'яті"
         Height="340" Width="500"
         WindowStyle="None"
         AllowsTransparency="True"
@@ -263,13 +263,13 @@ public static extern bool SetProcessDpiAwarenessContext(System.IntPtr ctx);
                         <Path Fill="#F59E0B" Data="M6.5,1 C6.5,1 3,5.5 3,8.5 C3,10.4 4.6,12 6.5,12 C8.4,12 10,10.4 10,8.5 C10,5.5 6.5,1 6.5,1 Z" 
                               Width="13" Height="13" Stretch="Uniform" Margin="0,0,8,0" VerticalAlignment="Center"/>
                         <TextBlock Text="09:00" Foreground="#F3F4F6" FontSize="13" FontWeight="Bold" FontFamily="Segoe UI, Inter" VerticalAlignment="Center"/>
-                        <TextBlock Text="  •  ХВИЛИНА МОВЧАННЯ" Foreground="#9CA3AF" FontSize="11.5" FontWeight="SemiBold" FontFamily="Segoe UI, Inter" VerticalAlignment="Center"/>
+                        <TextBlock Text="  •  ХВИЛИНА ПАМ'ЯТІ" Foreground="#9CA3AF" FontSize="11.5" FontWeight="SemiBold" FontFamily="Segoe UI, Inter" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Border>
             </Grid>
 
             <!-- 2. Main Title -->
-            <TextBlock Grid.Row="1" Text="Загальнонаціональна хвилина мовчання" 
+            <TextBlock Grid.Row="1" Text="Загальнонаціональна хвилина пам'яті" 
                        Foreground="#FFFFFF" FontSize="19" FontWeight="Bold" 
                        FontFamily="Segoe UI, Inter"
                        TextAlignment="Center" Margin="0,0,0,12"/>

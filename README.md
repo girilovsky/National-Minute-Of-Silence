@@ -1,4 +1,4 @@
-# National Minute of Silence Reminder (Загальнонаціональна хвилина мовчання о 09:00)
+# National Minute of Silence Reminder (Загальнонаціональна хвилина пам'яті о 09:00)
 
 > Реалізація для Jira-задачі [II-5426](https://green-house-corp.atlassian.net/browse/II-5426) / [ITSD-94958](https://green-house-corp.atlassian.net/browse/ITSD-94958).
 
