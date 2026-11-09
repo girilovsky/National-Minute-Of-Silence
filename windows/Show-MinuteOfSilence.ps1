@@ -99,7 +99,7 @@ public static extern bool SetProcessDpiAwarenessContext(System.IntPtr ctx);
         try {
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
             $webClient = New-Object System.Net.WebClient
-            $webClient.DownloadFile("https://raw.githubusercontent.com/girilovsky/National-Minute-Of-Silence/main/windows/metronome.mp3", $downloadTarget)
+            $webClient.DownloadFile("https://sainfraartifacts01.blob.core.windows.net/public/minute-of-silence/metronome.mp3", $downloadTarget)
             if (Test-Path $downloadTarget) {
                 $officialMp3Path = $downloadTarget
             }
@@ -176,7 +176,7 @@ public static extern bool SetProcessDpiAwarenessContext(System.IntPtr ctx);
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Хвилина пам'яті"
-        Height="340" Width="500"
+        Height="420" Width="580"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
@@ -239,12 +239,32 @@ public static extern bool SetProcessDpiAwarenessContext(System.IntPtr ctx);
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <Style TargetType="ProgressBar" x:Key="ModernProgressStyle">
+            <Setter Property="Background" Value="#1E2026"/>
+            <Setter Property="Foreground" Value="#F59E0B"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Height" Value="3"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ProgressBar">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="1.5">
+                            <Grid x:Name="PART_Track">
+                                <Border x:Name="PART_Indicator" Background="{TemplateBinding Foreground}" CornerRadius="1.5" HorizontalAlignment="Left"/>
+                            </Grid>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
-    <Border Background="#111215" CornerRadius="20" BorderBrush="#25272F" BorderThickness="1.2">
-        <Border.Effect>
-            <DropShadowEffect BlurRadius="45" Color="#000000" Opacity="0.8" ShadowDepth="14"/>
-        </Border.Effect>
+    <Grid Background="Transparent">
+        <Border Width="500" Height="340" Background="#111215" CornerRadius="20" BorderBrush="#25272F" BorderThickness="1.2"
+                HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="30" Color="#000000" Opacity="0.6" ShadowDepth="8" Direction="315"/>
+            </Border.Effect>
 
         <Grid Margin="28,24,28,20">
             <Grid.RowDefinitions>
@@ -291,12 +311,7 @@ public static extern bool SetProcessDpiAwarenessContext(System.IntPtr ctx);
 
             <!-- 4. Thin Modern Progress Bar -->
             <Grid Grid.Row="3" Margin="0,0,0,16">
-                <ProgressBar Name="TimerProgress" Height="3" Minimum="0" Maximum="60" Value="60" 
-                             Foreground="#F59E0B" Background="#1E2026" BorderThickness="0">
-                    <ProgressBar.Clip>
-                        <RectangleGeometry RadiusX="1.5" RadiusY="1.5" Rect="0,0,444,3"/>
-                    </ProgressBar.Clip>
-                </ProgressBar>
+                <ProgressBar Name="TimerProgress" Style="{StaticResource ModernProgressStyle}" Minimum="0" Maximum="60" Value="60"/>
             </Grid>
 
             <!-- 5. Footer: Countdown + Sound Toggle + Modern Dismiss Button -->
@@ -319,6 +334,7 @@ public static extern bool SetProcessDpiAwarenessContext(System.IntPtr ctx);
             </Grid>
         </Grid>
     </Border>
+    </Grid>
 </Window>
 "@
 
